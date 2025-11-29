@@ -684,7 +684,7 @@ new_sakin = self.sakin_controller.create(**new_sakin_data)  # ← Yeni kayıt
 
 **Proje Yöneticisi**: [Name]  
 **Teknik Lider**: [Name]  
-**Git Repository**: [GitHub URL]  
+**Git Repository**: https://github.com/McVertigo17/AidatPlus  
 **Issue Tracker**: [GitHub Issues URL]
 
 ---

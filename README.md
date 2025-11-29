@@ -343,9 +343,9 @@ Bu proje MIT Lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## 📞 İletişim ve Destek
 
-**Hata Raporları**: [GitHub Issues](https://github.com/your-repo/issues)  
-**Öneriler**: [Discussions](https://github.com/your-repo/discussions)  
-**Dokümantasyon**: [Wiki](https://github.com/your-repo/wiki)
+**Hata Raporları**: [GitHub Issues](https://github.com/McVertigo17/AidatPlus/issues)  
+**Öneriler**: [Discussions](https://github.com/McVertigo17/AidatPlus/discussions)  
+**Dokümantasyon**: [Wiki](https://github.com/McVertigo17/AidatPlus/wiki)
 
 ---
 
