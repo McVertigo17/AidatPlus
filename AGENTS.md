@@ -721,27 +721,32 @@ new_sakin = self.sakin_controller.create(**new_sakin_data)  # ← Yeni kayıt
 
 ### Eklenen Özellikler
 
-- ✅ **Sakin Tarih Validasyon Sistemi**
+- ✅ **Sakin Tarih Validasyon Sistemi** (Bug Fixes ile v2)
   - 4 validasyon kuralı (Hata kodları: VAL_SAKN_001, 002, 003, 004)
     - **VAL_SAKN_001**: Çıkış > Giriş tarihi kontrolü
     - **VAL_SAKN_002**: Dairede aktif sakin kontrolü (aynı anda 1 sakin)
     - **VAL_SAKN_003**: Tarih çakışması kontrolü (yeni giriş > eski çıkış)
     - **VAL_SAKN_004**: Tarih format validasyonu (DD.MM.YYYY)
-  - `_parse_date()` metodu: String/datetime/date → datetime parsing
+  - `_parse_date()` metodu: String/datetime/date → datetime parsing (datetime check ÖNCE)
   - `_validate_daire_tarih_cakmasi()` metodu: 3 kuralı uygulayan validasyon fonksiyonu
-  - `create()` metoduna tarih validasyon entegre (create sırasında)
-  - `update()` metoduna tarih validasyon entegre (güncelleme sırasında, kendi kaydı hariç)
-  - **Sonuç**: Aynı daireye yeni sakin eklenirken tarih çakışmaları kontrol ediliyor
-  - **Dosyalar**: `controllers/sakin_controller.py` (150+ satır yeni kod)
-  - **Dokümantasyon**: `docs/SAKIN_TARIH_VALIDATION.md` (300+ satır, test senaryoları + best practices)
+  - `create()` metoduna tarih validasyon entegre (HER ZAMAN: if daire_id and giris_tarihi)
+  - `update()` metoduna tarih validasyon entegre (kendi kaydı hariç, eski_daire_id kontrol)
+  - **Root Cause Fixes**:
+    - ✅ Create: Kontrol sırasında koşul eklendi (sadece zorunlu alanlar varsa tetikle)
+    - ✅ _parse_date: datetime check'i date check'inden önce yapılıyor
+    - ✅ Update: Pasif sakinde daire_id=None ise eski_daire_id kullanılıyor
+  - **Sonuç**: Aynı daireye yeni sakin eklenirken tarih çakışmaları %100 kontrol ediliyor
+  - **Dosyalar**: `controllers/sakin_controller.py` (160+ satır yeni kod + fixes)
+  - **Dokümantasyon**: `docs/SAKIN_TARIH_VALIDATION.md` (320+ satır, root causes + test senaryoları + best practices)
 
 ### Metrikleri Güncellemeleri
-- Python Satır Kodu: ~7050 → ~7200+ (+150 satır validasyon metodları)
+- Python Satır Kodu: ~7050 → ~7220+ (+170 satır validasyon metodları + bug fixes)
 - Controllers: sakin_controller.py %100 tarih validasyonu ile güncellendi
 - Docstring Coverage: Yeni metodlar (%100 Google style)
 - Hata Kodları: 7 → 11 (4 yeni sakin tarih validasyonu kodu)
 - Test Senaryoları: 6 senaryo dokümantasyonda belirtildi
-- Versiyon: 1.3 → 1.3.1
+- Bug Fixes: 3 kritik sorun çözüldü (Create koşul, _parse_date sırası, eski_daire_id)
+- Versiyon: 1.3 → 1.3.1 (v2 - Bug Fixes)
 
 ---
 

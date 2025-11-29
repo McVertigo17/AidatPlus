@@ -11,6 +11,58 @@ Bu dokümantasyon, sakin yönetiminde tarih çakışmalarını önlemek için uy
 
 ---
 
+## Önemli Notlar ve Root Causes
+
+⚠️ **Tarih Çakışması Kontrol Kuralları**:
+1. Create() ve Update() metodlarında **HER ZAMAN** yapılmalı (aktif/pasif fark etmez)
+2. daire_id ve giris_tarihi zorunlu olduğunda tetiklenir
+3. Pasif sakinde daire_id=None ise eski_daire_id kontrol edilir
+4. _parse_date() check sırası: datetime ÖNCE, sonra date (datetime subclass)
+
+### Root Causes (Hata Analizleri)
+
+**Problem 1: Create metodunda kontrol atlanması**
+```
+Eski Kod (HATALI):
+self._validate_daire_tarih_cakmasi(...)  # Hep çağrılıyor
+
+Yeni Kod (DOĞRU):
+if daire_id and giris_tarihi:  # Kontrol etilmesi gereken koşullar
+    self._validate_daire_tarih_cakmasi(...)
+```
+**Neden**: Normal aktif sakin eklenirken (cikis_tarihi yok) kontrol atlanabilirdi.
+
+**Problem 2: _parse_date check sırası**
+```
+Eski Kod (HATALI):
+if isinstance(date_value, date):  # ← date check önce
+    return datetime.combine(...)
+if isinstance(date_value, datetime):  # ← datetime check sonra
+    return date_value
+
+Yeni Kod (DOĞRU):
+if isinstance(date_value, datetime):  # ← datetime check ÖNCE
+    return date_value
+if isinstance(date_value, date):  # ← date check sonra
+    return datetime.combine(...)
+```
+**Neden**: Python'da `datetime` da `date`'in subclass'ıdır. date check önce yapılırsa datetime objeler yanlış parsing edilir.
+
+**Problem 3: Pasif sakin düzenlemede daire bulunamması**
+```
+Eski Kod (HATALI):
+daire_id = data.get("daire_id", existing.daire_id)
+# Pasif sakinde daire_id=None olduğu için kontrol atlanıyor
+
+Yeni Kod (DOĞRU):
+daire_id = data.get("daire_id", existing.daire_id)
+if daire_id is None and existing.eski_daire_id is not None:
+    daire_id = existing.eski_daire_id  # ← Geçmiş daire kullan
+```
+**Neden**: Pasif sakin `pasif_yap()` çağrıldığında `daire_id=None`, `eski_daire_id=[eski_daire]` olur. Validasyon sırasında eski daireyi kontrol etmeli.
+
+---
+
 ## Validasyon Kuralları
 
 ### 1. Kural: Çıkış > Giriş (VAL_SAKN_001)
@@ -190,21 +242,22 @@ self._validate_daire_tarih_cakmasi(
 def create(self, data: dict, db: Session = None) -> Sakin:
     # ... diğer validasyonlar ...
     
-    # Tarih parsing
+    # Tarih parsing (String → datetime)
     tahsis_tarihi = self._parse_date(data.get("tahsis_tarihi"))      # VAL_SAKN_004
     giris_tarihi = self._parse_date(data.get("giris_tarihi"))        # VAL_SAKN_004
     cikis_tarihi = self._parse_date(data.get("cikis_tarihi"))        # VAL_SAKN_004
     
-    # Tarih çakışması validasyonu (3 kural)
+    # Tarih çakışması validasyonu (HER ZAMAN yapılmalı)
     daire_id = data.get("daire_id")
-    self._validate_daire_tarih_cakmasi(
-        daire_id=daire_id,
-        giris_tarihi=giris_tarihi,
-        cikis_tarihi=cikis_tarihi,
-        db=session
-    )  # VAL_SAKN_001, VAL_SAKN_002, VAL_SAKN_003
+    if daire_id and giris_tarihi:  # daire_id ve giris_tarihi zorunlu
+        self._validate_daire_tarih_cakmasi(
+            daire_id=daire_id,
+            giris_tarihi=giris_tarihi,
+            cikis_tarihi=cikis_tarihi,
+            db=session
+        )  # VAL_SAKN_001, VAL_SAKN_002, VAL_SAKN_003
     
-    # Parsed tarihler veri sözlüğüne konan
+    # Parsed tarihler veri sözlüğüne koyun
     if tahsis_tarihi is not None:
         data["tahsis_tarihi"] = tahsis_tarihi
     if giris_tarihi is not None:
@@ -221,7 +274,7 @@ def create(self, data: dict, db: Session = None) -> Sakin:
 def update(self, id: int, data: dict, db: Session = None) -> Optional[Sakin]:
     # ... diğer validasyonlar ...
     
-    # Tarih parsing
+    # Tarih parsing (String → datetime)
     if "tahsis_tarihi" in data:
         data["tahsis_tarihi"] = self._parse_date(data.get("tahsis_tarihi"))
     if "giris_tarihi" in data:
@@ -232,18 +285,22 @@ def update(self, id: int, data: dict, db: Session = None) -> Optional[Sakin]:
     # Güncel sakin bilgisini al
     existing = session.query(Sakin).filter(Sakin.id == id).first()
     if existing:
-        # Tarih çakışması validasyonu (kendi kaydı hariç)
+        # Tarih çakışması validasyonu (HER ZAMAN yapılmalı, kendi kaydı hariç)
         giris_tarihi = data.get("giris_tarihi", existing.giris_tarihi)
         cikis_tarihi = data.get("cikis_tarihi", existing.cikis_tarihi)
+        # Pasif sakinde daire_id=None ise eski_daire_id kullan
         daire_id = data.get("daire_id", existing.daire_id)
+        if daire_id is None and existing.eski_daire_id is not None:
+            daire_id = existing.eski_daire_id
         
-        self._validate_daire_tarih_cakmasi(
-            daire_id=daire_id,
-            giris_tarihi=giris_tarihi,
-            cikis_tarihi=cikis_tarihi,
-            exclude_sakin_id=id,  # Kendini hariç tut
-            db=session
-        )
+        if daire_id and giris_tarihi:  # daire_id ve giris_tarihi zorunlu
+            self._validate_daire_tarih_cakmasi(
+                daire_id=daire_id,
+                giris_tarihi=giris_tarihi,
+                cikis_tarihi=cikis_tarihi,
+                exclude_sakin_id=id,  # Kendini hariç tut
+                db=session
+            )
     
     return super().update(id, data, session)
 ```

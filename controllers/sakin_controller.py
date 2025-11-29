@@ -204,14 +204,15 @@ class SakinController(BaseController[Sakin]):
             giris_tarihi = self._parse_date(data.get("giris_tarihi"))
             cikis_tarihi = self._parse_date(data.get("cikis_tarihi"))
             
-            # Tarih çakışması validasyonu
+            # Tarih çakışması validasyonu (HER ZAMAN çalışmalı)
             daire_id = data.get("daire_id")
-            self._validate_daire_tarih_cakmasi(
-                daire_id=daire_id,
-                giris_tarihi=giris_tarihi,
-                cikis_tarihi=cikis_tarihi,
-                db=session
-            )
+            if daire_id and giris_tarihi:  # daire_id ve giris_tarihi zorunlu
+                self._validate_daire_tarih_cakmasi(
+                    daire_id=daire_id,
+                    giris_tarihi=giris_tarihi,
+                    cikis_tarihi=cikis_tarihi,
+                    db=session
+                )
             
             # Parsing sonrası tarih değerlerini güncelle
             if tahsis_tarihi is not None:
@@ -289,18 +290,23 @@ class SakinController(BaseController[Sakin]):
             # Güncel sakin bilgisini al
             existing = session.query(Sakin).filter(Sakin.id == id).first()
             if existing:
-                # Tarih çakışması validasyonu
+                # Tarih çakışması validasyonu (daire_id ve giris_tarihi kontrol)
                 giris_tarihi = data.get("giris_tarihi", existing.giris_tarihi)
                 cikis_tarihi = data.get("cikis_tarihi", existing.cikis_tarihi)
+                # Pasif sakinde daire_id=None ise eski_daire_id kullan
                 daire_id = data.get("daire_id", existing.daire_id)
+                if daire_id is None and existing.eski_daire_id is not None:
+                    daire_id = existing.eski_daire_id
                 
-                self._validate_daire_tarih_cakmasi(
-                    daire_id=daire_id,
-                    giris_tarihi=giris_tarihi,
-                    cikis_tarihi=cikis_tarihi,
-                    exclude_sakin_id=id,  # Kendi kaydını hariç tut
-                    db=session
-                )
+                # HER ZAMAN tarih çakışması validasyonu yapılmalı
+                if daire_id and giris_tarihi:
+                    self._validate_daire_tarih_cakmasi(
+                        daire_id=daire_id,
+                        giris_tarihi=giris_tarihi,
+                        cikis_tarihi=cikis_tarihi,
+                        exclude_sakin_id=id,  # Kendi kaydını hariç tut
+                        db=session
+                    )
             
             # Base class'ın update metodunu çağır
             return super().update(id, data, session)
