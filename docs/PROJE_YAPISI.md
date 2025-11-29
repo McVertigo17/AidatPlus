@@ -244,13 +244,14 @@ Kategori (1) ──→ (N) FinansIslem
 ```
 customtkinter>=5.2.0      # Modern GUI
 sqlalchemy>=1.4.0         # ORM
-sqlite3                   # Veritabanı (built-in)
 pandas>=1.5.0             # Veri işleme
 matplotlib>=3.6.0         # Grafikler
 pillow>=9.0.0             # Resim işleme
 openpyxl>=3.10.0          # Excel export
 lxml>=4.9.0               # XML export
 ```
+
+**Not**: `sqlite3` Python'a yerleşiktir, ayrıca kurmanız gerekmez.
 
 ### Kurulum Adımları
 

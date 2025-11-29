@@ -77,7 +77,7 @@ Bu özellikleri sağlayan, tamamen **çevrimdışı** çalışan bir çözümdü
 
 ```bash
 # 1. Proje dosyalarını indir
-git clone <repo-url>
+git clone https://github.com/McVertigo17/AidatPlus.git
 cd AidatPlus
 
 # 2. Bağımlılıkları yükle
