@@ -7,6 +7,7 @@ işlemleri gerçekleştirir (aktif/pasif yönetimi vb.).
 
 from typing import List, Optional, cast, Union
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 from controllers.base_controller import BaseController
 from models.base import Sakin
 from models.validation import Validator
@@ -116,8 +117,13 @@ class SakinController(BaseController[Sakin]):
                     )
             
             # Kural 2 & 3: Aynı dairede sakinleri kontrol et
+            # NOT: Pasif sakin yapıldığında daire_id=None, eski_daire_id set edilir
+            # Bu yüzden hem daire_id hem eski_daire_id kontrol etmeli
             query = session.query(Sakin).filter(
-                Sakin.daire_id == daire_id,
+                or_(
+                    Sakin.daire_id == daire_id,          # Aktif sakin
+                    Sakin.eski_daire_id == daire_id      # Pasif sakin
+                ),
                 Sakin.aktif == True  # Sadece aktif sakinleri kontrol et
             )
             

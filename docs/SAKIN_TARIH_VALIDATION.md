@@ -48,18 +48,25 @@ if isinstance(date_value, date):  # ← date check sonra
 ```
 **Neden**: Python'da `datetime` da `date`'in subclass'ıdır. date check önce yapılırsa datetime objeler yanlış parsing edilir.
 
-**Problem 3: Pasif sakin düzenlemede daire bulunamması**
+**Problem 3: Query'de eski_daire kontrol edilmemesi** 
 ```
 Eski Kod (HATALI):
-daire_id = data.get("daire_id", existing.daire_id)
-# Pasif sakinde daire_id=None olduğu için kontrol atlanıyor
+query = session.query(Sakin).filter(
+    Sakin.daire_id == daire_id,  # ← Sadece daire_id
+    Sakin.aktif == True
+)
+# Pasif sakinde daire_id=NULL olduğu için bulunamıyor!
 
 Yeni Kod (DOĞRU):
-daire_id = data.get("daire_id", existing.daire_id)
-if daire_id is None and existing.eski_daire_id is not None:
-    daire_id = existing.eski_daire_id  # ← Geçmiş daire kullan
+query = session.query(Sakin).filter(
+    or_(
+        Sakin.daire_id == daire_id,       # Aktif sakin
+        Sakin.eski_daire_id == daire_id   # ← Pasif sakin da bulunur
+    ),
+    Sakin.aktif == True
+)
 ```
-**Neden**: Pasif sakin `pasif_yap()` çağrıldığında `daire_id=None`, `eski_daire_id=[eski_daire]` olur. Validasyon sırasında eski daireyi kontrol etmeli.
+**Neden**: Pasif sakin yapılırken `daire_id=NULL` ve `eski_daire_id=[eski_daire]` set edilir. Query'de `OR eski_daire_id` eklenmezse pasif sakinler bulunamaz, tarih çakışması kontrol edilmez.
 
 ---
 
