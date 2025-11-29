@@ -5,14 +5,14 @@ Bu modül, sakinler için CRUD operasyonlarını ve sakin-spesifik
 işlemleri gerçekleştirir (aktif/pasif yönetimi vb.).
 """
 
-from typing import List, Optional, cast
+from typing import List, Optional, cast, Union
 from sqlalchemy.orm import Session, joinedload
 from controllers.base_controller import BaseController
 from models.base import Sakin
 from models.validation import Validator
 from models.exceptions import ValidationError
 from database.config import get_db
-from datetime import datetime
+from datetime import datetime, date
 from utils.logger import get_logger
 
 class SakinController(BaseController[Sakin]):
@@ -29,6 +29,125 @@ class SakinController(BaseController[Sakin]):
     def __init__(self) -> None:
         super().__init__(Sakin)
         self.logger = get_logger(f"{self.__class__.__name__}")
+    
+    def _parse_date(self, date_value: Union[str, datetime, date, None]) -> Optional[datetime]:
+        """
+        Tarih değerini parsing et (String/datetime/date → datetime).
+        
+        Args:
+            date_value: Tarih değeri (str DD.MM.YYYY, datetime, date, None)
+        
+        Returns:
+            datetime: Parsed datetime object veya None
+        
+        Raises:
+            ValidationError: Geçersiz tarih formatı
+        
+        Example:
+            >>> parsed = controller._parse_date("01.01.2024")
+            >>> parsed = controller._parse_date(datetime.now())
+        """
+        if date_value is None:
+            return None
+        
+        if isinstance(date_value, datetime):
+            return date_value
+        
+        if isinstance(date_value, date):
+            return datetime.combine(date_value, datetime.min.time())
+        
+        if isinstance(date_value, str):
+            try:
+                return datetime.strptime(date_value, "%d.%m.%Y")
+            except ValueError:
+                raise ValidationError(
+                    "Geçersiz tarih formatı. DD.MM.YYYY kullanınız.",
+                    code="VAL_SAKN_004"
+                )
+        
+        raise ValidationError(
+            "Tarih String, datetime veya date türünde olmalıdır.",
+            code="VAL_SAKN_004"
+        )
+    
+    def _validate_daire_tarih_cakmasi(
+        self, 
+        daire_id: int, 
+        giris_tarihi: Optional[datetime],
+        cikis_tarihi: Optional[datetime],
+        exclude_sakin_id: Optional[int] = None,
+        db: Optional[Session] = None
+    ) -> None:
+        """
+        Aynı dairede tarih çakışmasını kontrol et.
+        
+        Kurallar:
+        1. cikis_tarihi > giris_tarihi (ayrılış > giriş)
+        2. Dairede aktif (cikis_tarihi=None) sakin varsa hata
+        3. Yeni sakin giriş tarihi > Eski sakin ayrılış tarihi
+        
+        Args:
+            daire_id (int): Daire ID'si
+            giris_tarihi (datetime, optional): Giriş tarihi
+            cikis_tarihi (datetime, optional): Çıkış tarihi
+            exclude_sakin_id (int, optional): Güncellemede hariç tutulacak sakin ID
+            db (Session, optional): Veritabanı session
+        
+        Raises:
+            ValidationError: Tarih çakışması veya kural ihlali
+        
+        Example:
+            >>> controller._validate_daire_tarih_cakmasi(
+            ...     daire_id=5,
+            ...     giris_tarihi=datetime(2024, 1, 1),
+            ...     cikis_tarihi=datetime(2024, 12, 31)
+            ... )
+        """
+        session = db or get_db()
+        close_db = db is None
+        
+        try:
+            # Kural 1: cikis_tarihi > giris_tarihi
+            if giris_tarihi and cikis_tarihi:
+                if cikis_tarihi <= giris_tarihi:
+                    raise ValidationError(
+                        "Çıkış tarihi giriş tarihinden sonra olmalıdır.",
+                        code="VAL_SAKN_001"
+                    )
+            
+            # Kural 2 & 3: Aynı dairede sakinleri kontrol et
+            query = session.query(Sakin).filter(
+                Sakin.daire_id == daire_id,
+                Sakin.aktif == True  # Sadece aktif sakinleri kontrol et
+            )
+            
+            if exclude_sakin_id:
+                query = query.filter(Sakin.id != exclude_sakin_id)
+            
+            existing_sakinler = query.all()
+            
+            # Kural 2: Dairede aktif sakin varsa hata
+            aktif_sakinler = [s for s in existing_sakinler if s.cikis_tarihi is None]
+            if aktif_sakinler and giris_tarihi and cikis_tarihi is None:
+                raise ValidationError(
+                    f"Bu dairede zaten aktif sakin bulunmaktadır: {aktif_sakinler[0].ad_soyad}",
+                    code="VAL_SAKN_002"
+                )
+            
+            # Kural 3: Yeni sakin giriş > Eski sakin ayrılış
+            if giris_tarihi:
+                for existing in existing_sakinler:
+                    if existing.cikis_tarihi:  # Pasif sakin
+                        if giris_tarihi <= existing.cikis_tarihi:
+                            raise ValidationError(
+                                f"Yeni sakin giriş tarihi {existing.ad_soyad}'ın ayrılış tarihinden sonra olmalıdır "
+                                f"({existing.cikis_tarihi.strftime('%d.%m.%Y')}).",
+                                code="VAL_SAKN_003"
+                            )
+        
+        finally:
+            if close_db:
+                session.close()
     
     def create(self, data: dict, db: Session = None) -> Sakin:
         """
@@ -80,19 +199,27 @@ class SakinController(BaseController[Sakin]):
             if data.get("email"):
                 Validator.validate_email(data.get("email", ""))
             
-            # Tahsis tarihi validasyonu (opsiyonel)
-            tahsis_tarihi = data.get("tahsis_tarihi")
-            if tahsis_tarihi:
-                # String veya datetime object olabilir
-                if isinstance(tahsis_tarihi, str):
-                    Validator.validate_date(tahsis_tarihi, "%d.%m.%Y")
+            # Tarih parsing (String → datetime)
+            tahsis_tarihi = self._parse_date(data.get("tahsis_tarihi"))
+            giris_tarihi = self._parse_date(data.get("giris_tarihi"))
+            cikis_tarihi = self._parse_date(data.get("cikis_tarihi"))
             
-            # Giriş tarihi validasyonu (opsiyonel)
-            giris_tarihi = data.get("giris_tarihi")
-            if giris_tarihi:
-                # String veya datetime object olabilir
-                if isinstance(giris_tarihi, str):
-                    Validator.validate_date(giris_tarihi, "%d.%m.%Y")
+            # Tarih çakışması validasyonu
+            daire_id = data.get("daire_id")
+            self._validate_daire_tarih_cakmasi(
+                daire_id=daire_id,
+                giris_tarihi=giris_tarihi,
+                cikis_tarihi=cikis_tarihi,
+                db=session
+            )
+            
+            # Parsing sonrası tarih değerlerini güncelle
+            if tahsis_tarihi is not None:
+                data["tahsis_tarihi"] = tahsis_tarihi
+            if giris_tarihi is not None:
+                data["giris_tarihi"] = giris_tarihi
+            if cikis_tarihi is not None:
+                data["cikis_tarihi"] = cikis_tarihi
             
             # Base class'ın create metodunu çağır
             return super().create(data, session)
@@ -116,6 +243,7 @@ class SakinController(BaseController[Sakin]):
                 - email (str, optional): Email adresi
                 - tahsis_tarihi (str, optional): Tahsis tarihi (DD.MM.YYYY)
                 - giris_tarihi (str, optional): Giriş tarihi (DD.MM.YYYY)
+                - cikis_tarihi (str, optional): Çıkış tarihi (DD.MM.YYYY)
         
         Returns:
             Sakin | None: Güncellenen sakin veya None
@@ -150,13 +278,29 @@ class SakinController(BaseController[Sakin]):
             if "email" in data and data["email"]:
                 Validator.validate_email(data["email"])
             
-            # Tahsis tarihi validasyonu (eğer güncelleniyorsa)
-            if "tahsis_tarihi" in data and data["tahsis_tarihi"]:
-                Validator.validate_date(data["tahsis_tarihi"], "%d.%m.%Y")
+            # Tarih parsing (String → datetime)
+            if "tahsis_tarihi" in data:
+                data["tahsis_tarihi"] = self._parse_date(data.get("tahsis_tarihi"))
+            if "giris_tarihi" in data:
+                data["giris_tarihi"] = self._parse_date(data.get("giris_tarihi"))
+            if "cikis_tarihi" in data:
+                data["cikis_tarihi"] = self._parse_date(data.get("cikis_tarihi"))
             
-            # Giriş tarihi validasyonu (eğer güncelleniyorsa)
-            if "giris_tarihi" in data and data["giris_tarihi"]:
-                Validator.validate_date(data["giris_tarihi"], "%d.%m.%Y")
+            # Güncel sakin bilgisini al
+            existing = session.query(Sakin).filter(Sakin.id == id).first()
+            if existing:
+                # Tarih çakışması validasyonu
+                giris_tarihi = data.get("giris_tarihi", existing.giris_tarihi)
+                cikis_tarihi = data.get("cikis_tarihi", existing.cikis_tarihi)
+                daire_id = data.get("daire_id", existing.daire_id)
+                
+                self._validate_daire_tarih_cakmasi(
+                    daire_id=daire_id,
+                    giris_tarihi=giris_tarihi,
+                    cikis_tarihi=cikis_tarihi,
+                    exclude_sakin_id=id,  # Kendi kaydını hariç tut
+                    db=session
+                )
             
             # Base class'ın update metodunu çağır
             return super().update(id, data, session)

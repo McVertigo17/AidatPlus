@@ -7,14 +7,20 @@
 # Bağımlılıkları yükle
 pip install -r requirements.txt
 
+# .env dosyası oluştur (.env.example'dan)
+cp .env.example .env
+
 # Uygulamayı çalıştır
 python main.py
 ```
 
 **Notlar**:
+- ℹ️ Configuration Manager otomatik başlatılır (`main.py` başında)
+- ℹ️ Configuration kaynakları: defaults → JSON → .env → database → runtime
 - ℹ️ Veritabanı tabloları `main.py` başlatıldığında otomatik oluşturulur
 - ℹ️ İlk çalıştırmada `aidat_plus.db` dosyası oluşturulur
-- ℹ️ Ayrı setup script gerekmez
+- ℹ️ Logging ayarları konfigürasyondan uygulanır
+- ℹ️ `.env` dosyasında API anahtarları ve hassas veriler saklanır
 
 ### Testing
 - Manual testing through GUI panels
@@ -44,6 +50,16 @@ AidatPlus/
 ├── main.py                           # Ana uygulama entry point
 ├── requirements.txt                  # Python bağımlılıkları
 ├── aidat_plus.db                     # SQLite veritabanı
+├── .env.example                      # YENİ: Environment variables template
+│
+├── configuration/                    # YENİ: Configuration Management
+│   ├── __init__.py                   # Package exports
+│   ├── config_manager.py             # ConfigurationManager sınıfı (Singleton)
+│   └── constants.py                  # ConfigKeys, ConfigDefaults, vb.
+│
+├── config/                           # YENİ: JSON konfigürasyon dosyaları
+│   ├── app_config.json              # Genel uygulama ayarları
+│   └── user_preferences.json        # Kullanıcı tercihleri
 │
 ├── database/                         # Veritabanı katmanı
 │   ├── __init__.py
@@ -81,8 +97,14 @@ AidatPlus/
 │   ├── ayarlar_panel.py              # Ayarlar/Kategoriler
 │   └── error_handler.py              # Error handling ve validation
 │
+├── utils/                            # Utility fonksiyonlar
+│   ├── __init__.py
+│   └── logger.py                     # Logging sistemi
+│
 ├── docs/                             # Dokümantasyon
 │   ├── PROJE_YAPISI.md               # Mimari detayları
+│   ├── CONFIGURATION_MANAGEMENT.md   # YENİ: Configuration rehberi
+│   ├── CONFIGURATION_IMPLEMENTATION.md # YENİ: Implementation detayları
 │   ├── TODO.md                       # Geliştirme planı
 │   ├── KILAVUZLAR.md                 # Özellik kılavuzları
 │   └── SORULAR_CEVAPLAR.md           # FAQ
@@ -689,9 +711,37 @@ new_sakin = self.sakin_controller.create(**new_sakin_data)  # ← Yeni kayıt
 
 ---
 
-**Son Güncelleme**: 29 Kasım 2025 (v1.3 Sakin Silme Mantığı Düzeltildi)  
-**Versiyon**: 1.3 (Soft Delete Prensibi)  
-**Durum**: ✅ v1.1 Tamamlandı - ✅ v1.2 Tamamlandı (Docstring %90+) - ✅ v1.3 Tamamlandı (Sakin Silme Mantığı)
+**Son Güncelleme**: 29 Kasım 2025 (v1.3.1 Sakin Tarih Validasyonu)  
+**Versiyon**: 1.3.1 (Sakin Tarih Validasyon Sistemi)  
+**Durum**: ✅ v1.1 Tamamlandı - ✅ v1.2 Tamamlandı (Docstring %90+) - ✅ v1.3 Tamamlandı (Sakin Silme Mantığı) - ✅ v1.3.1 Tamamlandı (Sakin Tarih Validasyon)
+
+---
+
+## 📝 Değişim Geçmişi (v1.3.1)
+
+### Eklenen Özellikler
+
+- ✅ **Sakin Tarih Validasyon Sistemi**
+  - 4 validasyon kuralı (Hata kodları: VAL_SAKN_001, 002, 003, 004)
+    - **VAL_SAKN_001**: Çıkış > Giriş tarihi kontrolü
+    - **VAL_SAKN_002**: Dairede aktif sakin kontrolü (aynı anda 1 sakin)
+    - **VAL_SAKN_003**: Tarih çakışması kontrolü (yeni giriş > eski çıkış)
+    - **VAL_SAKN_004**: Tarih format validasyonu (DD.MM.YYYY)
+  - `_parse_date()` metodu: String/datetime/date → datetime parsing
+  - `_validate_daire_tarih_cakmasi()` metodu: 3 kuralı uygulayan validasyon fonksiyonu
+  - `create()` metoduna tarih validasyon entegre (create sırasında)
+  - `update()` metoduna tarih validasyon entegre (güncelleme sırasında, kendi kaydı hariç)
+  - **Sonuç**: Aynı daireye yeni sakin eklenirken tarih çakışmaları kontrol ediliyor
+  - **Dosyalar**: `controllers/sakin_controller.py` (150+ satır yeni kod)
+  - **Dokümantasyon**: `docs/SAKIN_TARIH_VALIDATION.md` (300+ satır, test senaryoları + best practices)
+
+### Metrikleri Güncellemeleri
+- Python Satır Kodu: ~7050 → ~7200+ (+150 satır validasyon metodları)
+- Controllers: sakin_controller.py %100 tarih validasyonu ile güncellendi
+- Docstring Coverage: Yeni metodlar (%100 Google style)
+- Hata Kodları: 7 → 11 (4 yeni sakin tarih validasyonu kodu)
+- Test Senaryoları: 6 senaryo dokümantasyonda belirtildi
+- Versiyon: 1.3 → 1.3.1
 
 ---
 
