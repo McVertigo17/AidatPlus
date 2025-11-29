@@ -8,22 +8,42 @@ import customtkinter as ctk
 from tkinter import messagebox
 import sys
 import os
+import logging
 from typing import Dict
 
 # Proje klasörünü Python path'e ekle
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Configuration Manager'ı başlat
+from configuration import ConfigurationManager, ConfigKeys
+from utils.logger import AidatPlusLogger
+
+config_mgr = ConfigurationManager.get_instance()
+
+# Logging ayarlarını uygula (UTF-8 support ile)
+logging_level = config_mgr.get(ConfigKeys.LOGGING_LEVEL, 'INFO')
+logger_instance = AidatPlusLogger(
+    name="AidatPlus",
+    log_level=getattr(logging, logging_level)
+)
+logger = logger_instance.logger
+
+logger.info("=== Aidat Plus başlatılıyor ===")
+logger.info(f"Environment: {config_mgr.get(ConfigKeys.APP_ENV)}")
+logger.info(f"Debug Mode: {config_mgr.get(ConfigKeys.APP_DEBUG)}")
+
 # Modelleri import et ki tablolar oluşturulsun
 from models.base import *
 
-# Uygulama renk şeması (Resmi kurum renkleri)
+# Uygulama renk şeması (Resmi kurum renkleri - Light tema için)
+# Dark mode CustomTkinter otomatik olarak uyarlanır
 COLORS = {
     "primary": "#003366",      # Koyu mavi (ana renk)
     "secondary": "#0055A4",    # Orta mavi
     "accent": "#E6F3FF",       # Açık mavi
-    "background": "#F8F9FA",   # Açık gri-beyaz
-    "surface": "#FFFFFF",      # Beyaz
-    "text": "#212529",         # Koyu gri metin
+    "background": "#F8F9FA",   # Açık gri-beyaz (light) / Koyu gri (dark)
+    "surface": "#FFFFFF",      # Beyaz (light) / Koyu (dark)
+    "text": "#212529",         # Koyu gri metin (light) / Açık gri (dark)
     "text_secondary": "#6C757D", # Açık gri metin
     "border": "#DEE2E6",       # Kenarlık rengi
     "success": "#28A745",      # Yeşil
@@ -38,12 +58,26 @@ class AidatPlusApp:
         """
         Ana uygulama sınıfını başlat.
         
-        CustomTkinter ayarlarını konfigüre eder, ana pencereyi oluşturur,
+        Configuration Manager'dan UI ayarlarını yükler,
+        CustomTkinter'ı konfigüre eder, ana pencereyi oluşturur,
         ve arayüzü kurar.
+        
+        Konfigürasyon kaynakları:
+        - config/app_config.json
+        - config/user_preferences.json
+        - .env dosyası
         """
-        # CustomTkinter ayarları
-        ctk.set_appearance_mode("light")
+        self.config = config_mgr
+        
+        # CustomTkinter ayarları (konfigürasyondan)
+        theme = self.config.get(ConfigKeys.UI_THEME, 'dark')
+        # CustomTkinter appearance modes: "dark", "light", "system"
+        # theme config'ten gelen değer doğru olup olmadığını kontrol et
+        if theme not in ('dark', 'light', 'system'):
+            theme = 'dark'  # Default to dark
+        ctk.set_appearance_mode(theme)
         ctk.set_default_color_theme("blue")
+        logger.debug(f"Theme set to: {theme}")
 
         # Ana pencere
         self.root = ctk.CTk()
@@ -51,18 +85,20 @@ class AidatPlusApp:
         self.root.resizable(False, False)
         
         # Ana pencereyi ekranın üst-ortasında konumlandır
-        window_width = 1300
-        window_height = 785
+        # Konfigürasyondan pencere boyutlarını al
+        window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1300)
+        window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 785)
         screen_width = self.root.winfo_screenwidth()
         x = (screen_width - window_width) // 2
         y = 0
         self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        logger.debug(f"Window geometry: {window_width}x{window_height}")
 
         # Icon ayarı (varsa)
         try:
             self.root.iconbitmap("assets/icon.ico")
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"Icon not found: {e}")
 
         # Panel referansları
         self.panels: Dict[str, ctk.CTkToplevel] = {}
@@ -559,19 +595,32 @@ class AidatPlusApp:
 
 
 def main() -> None:
-    """Ana fonksiyon"""
+    """Ana fonksiyon
+    
+    1. Configuration Manager'ı başlatır
+    2. Logging'i ayarlar
+    3. Veritabanı tablolarını oluşturur
+    4. Uygulamayı çalıştırır
+    
+    Raises:
+        Exception: Kritik hata durumlarında
+    """
     try:
+        logger.info("Veritabanı tabloları kontrol ediliyor...")
         # Veritabanı tablolarını kontrol et ve oluştur
-        import os
         from database.config import Base, engine
 
         # Veritabanı tablolarını oluştur (varsa dokunma, yoksa oluştur)
-        db_file = "aidat_plus.db"
         Base.metadata.create_all(bind=engine)
+        logger.info("Veritabanı tabloları hazırlandı")
 
+        logger.info("Uygulama penceresi oluşturuluyor...")
         app = AidatPlusApp()
+        logger.info("Aidat Plus başarıyla başlatıldı")
         app.run()
+        
     except Exception as e:
+        logger.critical(f"Uygulama başlatılırken kritik hata: {str(e)}", exc_info=True)
         messagebox.showerror("Hata", f"Uygulama başlatılırken hata oluştu:\n{str(e)}")
 
 

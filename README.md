@@ -95,13 +95,26 @@ python main.py
 
 ### Windows'ta
 
+**Command Prompt:**
 ```batch
-# PowerShell veya Command Prompt'tan:
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate.bat
 pip install -r requirements.txt
 python main.py
 ```
+
+**PowerShell:**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python main.py
+```
+
+> **Not**: PowerShell'de execution policy hatası alırsanız, yönetici olarak açıp şu komutu çalıştırın:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
 
 ### macOS/Linux'ta
 

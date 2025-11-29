@@ -68,9 +68,18 @@ class AidatPlusLogger:
         console_handler.setFormatter(console_formatter)
         # Set UTF-8 encoding for console (Windows compatibility)
         try:
-            console_handler.stream.reconfigure(encoding='utf-8')
-        except (AttributeError, UnicodeError):
-            # Fallback for older Python or when reconfigure is not available
+            # Python 3.7+: reconfigure stream to UTF-8
+            if hasattr(console_handler.stream, 'reconfigure'):
+                console_handler.stream.reconfigure(encoding='utf-8')
+            elif hasattr(console_handler.stream, 'buffer'):
+                # Alternative: wrap with UTF-8 codec
+                import io
+                console_handler.setStream(
+                    io.TextIOWrapper(console_handler.stream.buffer, encoding='utf-8')
+                )
+        except (AttributeError, UnicodeError, Exception):
+            # Fallback: silent failure, use default encoding
+            # File logging will still have UTF-8
             pass
         
         # Add handlers to logger

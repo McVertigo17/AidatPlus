@@ -1,0 +1,23 @@
+{
+  "user": {
+    "last_active_lojman_id": null,
+    "last_active_panel": "dashboard",
+    "preferred_language": "tr"
+  },
+  "ui_preferences": {
+    "window_state": "normal",
+    "last_window_width": 1400,
+    "last_window_height": 900,
+    "sidebar_collapsed": false,
+    "theme": "light"
+  },
+  "financial": {
+    "currency": "TRY",
+    "decimal_places": 2,
+    "default_account_id": null
+  },
+  "reports": {
+    "default_date_format": "DD.MM.YYYY",
+    "include_zero_values": false
+  }
+}

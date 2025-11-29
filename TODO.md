@@ -2,7 +2,8 @@
 
 **Son Güncelleme**: 29 Kasım 2025  
 **Durum**: ✅ v1.1 Tamamlandı (Error Handling, Logging, Type Hints, Validation)  
-**Durum**: ✅ v1.2 Tamamlandı (Docstring %90+, Utilities Rehberi)
+**Durum**: ✅ v1.2 Tamamlandı (Docstring %90+, Utilities Rehberi)  
+**Durum**: ✅ v1.3 Tamamlandı (Configuration Management v1 + Theme Fix)
 
 ---
 
@@ -16,8 +17,45 @@
   - [x] Emoji desteği (📊, 🔴, 🟢, 🔵, vb.)
 - [x] Docstring'lere encoding açıklaması eklendi
 - [x] UTILITIES_REHBERI.md'ye UTF-8 bölümü eklendi
+- [x] main.py logging setup iyileştirildi (29 Kasım 2025)
+  - [x] AidatPlusLogger kullanımı (logging.basicConfig yerine)
+  - [x] UTF-8 console handler automatic configuration
+  - [x] Fallback mechanisms for older Python versions
+- [x] logger.py console handler improvements
+  - [x] `stream.reconfigure(encoding='utf-8')` desteği
+  - [x] `TextIOWrapper` fallback alternative
+  - [x] Error handling ve graceful degradation
+- [x] UTF8_ENCODING_FIX.md dokümantasyonu oluşturuldu
 
-**Sonuç**: UnicodeEncodeError hatası çözüldü. Logger tüm platform'larda (Windows/Linux/macOS) çalışıyor.
+**Sonuç**: Windows cmd.exe'de UnicodeEncodeError hatası çözüldü. Logger tüm platform'larda (Windows/Linux/macOS) çalışıyor. File logging her zaman UTF-8.
+
+---
+
+### 0.5. **Theme ve Arayüz Renk Ayarları Fix** ✅ (29 Kasım 2025)
+- [x] CustomTkinter theme uyumsuzluğu çözülmesi
+  - [x] Dark mode'da siyah başlık sorunu identify
+  - [x] Theme default: "dark" → "light" değiştirildi
+- [x] Configuration'dan theme yüklenmesi
+  - [x] main.py'de theme validation eklendi
+  - [x] Geçersiz theme values fallback
+  - [x] config/app_config.json theme: "light"
+- [x] User preferences'de theme eklendi
+  - [x] config/user_preferences.json theme field
+- [x] THEME_TROUBLESHOOTING.md dokümantasyonu
+  - [x] Problem açıklaması
+  - [x] CustomTkinter theme behavior
+  - [x] Best practices
+  - [x] Testing guide
+  - [x] Common issues & solutions
+
+**Dosyalar Güncellendi**:
+- ✅ `main.py` (theme validation)
+- ✅ `config/app_config.json` (theme: light)
+- ✅ `config/user_preferences.json` (theme field)
+- ✅ `configuration/config_manager.py` (default: light)
+- ✅ `docs/THEME_TROUBLESHOOTING.md` (yeni)
+
+**Sonuç**: Arayüz renkleri doğru görüntüleniyor, light tema uygulanıyor, Configuration'dan dinamik theme yükleniyor.
 
 ---
 
@@ -214,17 +252,46 @@ with ErrorHandler(parent=modal, show_success_msg=False):
 
 ## 📋 Orta Öncelikli Görevler (Medium Priority)
 
-### 5. **Configuration Management**
-- [ ] `config/settings.py` oluştur
-  - [ ] Uygulama geneli ayarlar
-  - [ ] Veritabanı yolu
-  - [ ] Kategori dosyası yolu
-  - [ ] UI teması ayarları
-  - [ ] Backup klasörü yolu
-- [ ] Environment variable desteği
-- [ ] INI/JSON config dosyası desteği
+### 5. **Configuration Management** ✅ (29 Kasım 2025)
+- [x] `configuration/config_manager.py` oluştur (900+ satır)
+  - [x] Merkezi ConfigurationManager sınıfı (Singleton)
+  - [x] 5-tier override hierarchy
+  - [x] Nested key support
+  - [x] Type conversion
+- [x] `configuration/constants.py` oluştur (300+ satır)
+  - [x] 50+ ConfigKeys constant
+  - [x] ConfigDefaults
+  - [x] EnvironmentTypes, LogLevels, ThemeTypes enums
+- [x] `config/` dizini ve JSON dosyaları
+  - [x] `app_config.json` - Uygulama ayarları
+  - [x] `user_preferences.json` - Kullanıcı tercihleri
+- [x] Environment variable desteği (.env dosyası)
+  - [x] `.env.example` template oluştur
+  - [x] Load dotenv integration
+  - [x] String → bool/int/float parsing
+- [x] JSON config dosyası desteği
+  - [x] JSON okuma/yazma
+  - [x] Automatic merge
+- [x] main.py entegrasyonu
+  - [x] ConfigurationManager başlatma
+  - [x] Logging setup
+  - [x] UI theme setup
+- [x] Kapsamlı dokümantasyon
+  - [x] `CONFIGURATION_MANAGEMENT.md` (700+ satır)
+  - [x] `CONFIGURATION_IMPLEMENTATION.md` (400+ satır)
+  - [x] `CONFIGURATION_SETUP_SUMMARY.md` (özet)
 
-**Dosyalar**: `config/settings.py`, `config.ini` (şablon)
+**Dosyalar**: 
+- ✅ `configuration/config_manager.py` (900+ satır)
+- ✅ `configuration/constants.py` (300+ satır)
+- ✅ `configuration/__init__.py`
+- ✅ `config/app_config.json`
+- ✅ `config/user_preferences.json`
+- ✅ `.env.example`
+- ✅ `main.py` (güncellenmiş)
+- ✅ Dokümantasyon (1100+ satır)
+
+**Durum**: ✅ Configuration Management v1.0 Tamamlandı
 
 ---
 
