@@ -223,14 +223,14 @@ class FinansPanel(BasePanel):
 
         # Kolon genişlikleri ve hizalanması
         self.islemler_tree.column("id", width=50, anchor="center")
-        self.islemler_tree.column("tur", width=80, anchor="center")
-        self.islemler_tree.column("tarih", width=100, anchor="center")
+        self.islemler_tree.column("tur", width=30, anchor="center")
+        self.islemler_tree.column("tarih", width=50, anchor="center")
         self.islemler_tree.column("ana_kategori", width=120, anchor="center")
         self.islemler_tree.column("alt_kategori", width=120, anchor="center")
         self.islemler_tree.column("hesap", width=150, anchor="center")
-        self.islemler_tree.column("tutar", width=100, anchor="center")
-        self.islemler_tree.column("belge", width=35, anchor="center")
-        self.islemler_tree.column("aciklama", width=200, anchor="center")
+        self.islemler_tree.column("tutar", width=50, anchor="center")
+        self.islemler_tree.column("belge", width=15, anchor="center")
+        self.islemler_tree.column("aciklama", width=350, anchor="center")
 
         # Treeview'i scrollable frame'e yerleştir
         self.islemler_tree.pack(fill="both", expand=True)
@@ -1391,7 +1391,7 @@ class FinansPanel(BasePanel):
                 if secilen_hesap and hasattr(secilen_hesap, 'para_birimi'):
                     para_birimi = secilen_hesap.para_birimi
             
-            show_success("Başarılı", f"{islem_turu} '{tutar_val:.2f} {para_birimi}' başarıyla {action}!", parent=modal)
+            show_success(parent=modal, title="Başarılı", message=f"{islem_turu} '{tutar_val:.2f} {para_birimi}' başarıyla {action}!")
 
             # Modal'ı kapat
             modal.destroy()
@@ -1608,20 +1608,20 @@ class FinansPanel(BasePanel):
             
             # Hesap türü validasyonu
             if not tur or tur == "Seçiniz":
-                show_error("Hata", "Hesap türü seçilmelidir!", parent=modal)
+                show_error(parent=modal, title="Hata", message="Hesap türü seçilmelidir!")
                 return
             
             # Bakiye validasyonu
             try:
                 bakiye_val = float(bakiye.strip()) if bakiye.strip() else 0.0
             except ValueError:
-                show_error("Hata", "Bakiye geçerli bir sayı olmalıdır!", parent=modal)
+                show_error(parent=modal, title="Hata", message="Bakiye geçerli bir sayı olmalıdır!")
                 return
             
             Validator.validate_positive_number(bakiye_val, "Bakiye", allow_zero=True)
         
         except ValidationError as e:
-            show_error("Hata", str(e.message), parent=modal)
+            show_error(parent=modal, title="Hata", message=str(e.message))
             return
 
         aciklama = aciklama.strip() if aciklama else None
@@ -1659,7 +1659,7 @@ class FinansPanel(BasePanel):
 
                 # Modal'ı kapat SONRA mesaj göster
                 modal.destroy()
-                show_success("Başarılı", f"Hesap '{ad}' başarıyla {action}!")
+                show_success(parent=self.parent, title="Başarılı", message=f"Hesap '{ad}' başarıyla {action}!")
 
                 # Listeyi yenile
                 self.load_data()

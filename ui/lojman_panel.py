@@ -1074,7 +1074,7 @@ class LojmanPanel(BasePanel):
                 with ErrorHandler(parent=modal, show_success_msg=False):
                     self.lojman_controller.update(lojman.id, {"ad": ad, "adres": adres})
                     modal.destroy()
-                    show_success(self.parent, f"Lojman '{ad}' başarıyla güncellendi!")
+                    show_success(parent=self.parent, title="Başarılı", message=f"Lojman '{ad}' başarıyla güncellendi!")
                     self.load_data()
             except (ValidationError, DatabaseError) as e:
                 handle_exception(e, parent=modal)
@@ -1186,7 +1186,7 @@ class LojmanPanel(BasePanel):
                     }
                     self.blok_controller.update(blok.id, update_data)
                     modal.destroy()
-                    show_success(self.parent, f"Blok '{ad}' başarıyla güncellendi!")
+                    show_success(parent=self.parent, title="Başarılı", message=f"Blok '{ad}' başarıyla güncellendi!")
                     self.load_data()
             except (ValidationError, DatabaseError, NotFoundError) as e:
                 handle_exception(e, parent=modal)
@@ -1411,7 +1411,7 @@ class LojmanPanel(BasePanel):
                     }
                     self.daire_controller.update(daire.id, update_data)
                     modal.destroy()
-                    show_success(self.parent, f"Daire '{daire_no}' başarıyla güncellendi!")
+                    show_success(parent=self.parent, title="Başarılı", message=f"Daire '{daire_no}' başarıyla güncellendi!")
                     self.load_data()
             except (ValidationError, DatabaseError, NotFoundError) as e:
                 handle_exception(e, parent=modal)

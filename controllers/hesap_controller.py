@@ -225,7 +225,27 @@ class HesapController(BaseController[Hesap]):
                 db.close()
 
     def hesap_bakiye_guncelle(self, hesap_id: int, tutar: float, islem_turu: str, db: Optional[Session] = None) -> bool:
-        """Hesap bakiyesini güncelle (gelir/gider/transfer işlemine göre)"""
+        """
+        Hesap bakiyesini güncelle (gelir/gider/transfer işlemine göre).
+        
+        Atomic transaction içinde gerçekleştirilir - kısmi güncellemeler engellenir.
+        
+        Args:
+            hesap_id (int): Hesap ID'si
+            tutar (float): İşlem tutarı (pozitif)
+            islem_turu (str): İşlem türü ("Gelir", "Gider", "Transfer")
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            bool: True (başarılı), False (hesap bulunamadı)
+        
+        Raises:
+            ValidationError: Bakiye negatif olacaksa (Gider türü)
+            DatabaseError: Veritabanı hatası
+        
+        Example:
+            >>> success = controller.hesap_bakiye_guncelle(1, 5000, "Gelir")
+        """
         self.logger.debug(f"Updating balance for account {hesap_id}: {islem_turu} {tutar}")
         close_db = False
         if db is None:
@@ -233,23 +253,69 @@ class HesapController(BaseController[Hesap]):
             close_db = True
 
         try:
-            hesap = self.get_by_id(hesap_id, db)
-            if hesap:
-                old_balance = hesap.bakiye
-                if islem_turu == "Gelir":
-                    hesap.bakiye += tutar
-                elif islem_turu == "Gider":
-                    hesap.bakiye -= tutar
-                # Transfer için özel işlem gerekmiyor çünkü transfer hem gelir hem gider olarak iki hesapta da işlenir
-
-                db.commit()
-                self.logger.info(f"Account {hesap_id} balance updated: {old_balance} → {hesap.bakiye}")
+            # Bakiye güncelleme türü validasyonu
+            Validator.validate_choice(islem_turu, "İşlem Türü", ["Gelir", "Gider", "Transfer"])
+            Validator.validate_positive_number(tutar, "Tutar")
+            
+            # Hesabı veritabanından kes (atomic update için row lock)
+            hesap = db.query(Hesap).filter(Hesap.id == hesap_id).with_for_update().first()
+            
+            if not hesap:
+                self.logger.warning(f"Account {hesap_id} not found for balance update")
+                return False
+            
+            old_balance = hesap.bakiye
+            
+            # Yeni bakiye hesapla
+            if islem_turu == "Gelir":
+                new_balance = hesap.bakiye + tutar
+            elif islem_turu == "Gider":
+                new_balance = hesap.bakiye - tutar
+                # Gider işleminde bakiye negatif olmasını kontrol et
+                if new_balance < 0:
+                    raise ValidationError(
+                        f"Yetersiz bakiye: {old_balance} TL < {tutar} TL",
+                        code="VAL_ACC_001",
+                        details={
+                            "hesap_id": hesap_id,
+                            "mevcut_bakiye": old_balance,
+                            "istenen_tutar": tutar,
+                            "fark": new_balance
+                        }
+                    )
+            else:
+                # Transfer tipinde bakiye işlemi direkt değişmez (gelir/gider olarak işlenir)
                 return True
-            self.logger.warning(f"Account {hesap_id} not found for balance update")
-            return False
-        except Exception as e:
-            self.logger.error(f"Failed to update balance for account {hesap_id}: {str(e)}")
+            
+            # Bakiyeyi güncelle ve hemen commit et (transaction'ın içinde)
+            hesap.bakiye = new_balance
+            db.commit()
+            
+            self.logger.info(
+                f"Account {hesap_id} balance updated: {old_balance} → {new_balance} "
+                f"(Işlem: {islem_turu}, Tutar: {tutar})"
+            )
+            return True
+            
+        except ValidationError:
+            db.rollback() if not close_db else None
             raise
+        except (IntegrityError, SQLAlchemyError) as e:
+            db.rollback() if not close_db else None
+            self.logger.error(f"Database error updating balance for account {hesap_id}: {str(e)}")
+            raise DatabaseError(
+                f"Hesap bakiyesi güncellenirken veritabanı hatası: {str(e)}",
+                code="DB_BAL_001",
+                details={"hesap_id": hesap_id, "islem_turu": islem_turu}
+            )
+        except Exception as e:
+            db.rollback() if not close_db else None
+            self.logger.error(f"Unexpected error updating balance for account {hesap_id}: {str(e)}")
+            raise DatabaseError(
+                f"Beklenmeyen hata: {str(e)}",
+                code="DB_BAL_002",
+                details={"hesap_id": hesap_id}
+            )
         finally:
             if close_db and db is not None:
                 db.close()

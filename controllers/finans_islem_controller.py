@@ -7,10 +7,11 @@ ve hesap bakiyelerini yönetir.
 
 from typing import List, Optional, cast
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from controllers.base_controller import BaseController
 from models.base import FinansIslem, AltKategori, Hesap
 from models.validation import Validator
-from models.exceptions import ValidationError, NotFoundError
+from models.exceptions import ValidationError, NotFoundError, DatabaseError
 from database.config import get_db
 from datetime import datetime
 from controllers.hesap_controller import HesapController
@@ -36,7 +37,10 @@ class FinansIslemController(BaseController[FinansIslem]):
 
     def create(self, data: dict, db: Optional[Session] = None) -> FinansIslem:
         """
-        Yeni finans işlemi oluştur ve hesap bakiyesini güncelle.
+        Yeni finans işlemi oluştur ve hesap bakiyesini güncelle (ATOMIC).
+        
+        İşlem ve hesap bakiyeleri aynı transaction'da güncellenir.
+        Herhangi bir hata durumunda tüm değişiklikler geri alınır.
         
         Args:
             data (dict): İşlem verileri
@@ -52,8 +56,8 @@ class FinansIslemController(BaseController[FinansIslem]):
             FinansIslem: Oluşturulan işlem nesnesi
         
         Raises:
-            ValidationError: Veri geçersiz ise
-            NotFoundError: Kategori bulunamadı ise
+            ValidationError: Veri geçersiz ise veya yetersiz bakiye
+            NotFoundError: Kategori veya hesap bulunamadı ise
             DatabaseError: Veritabanı hatası
         
         Example:
@@ -72,6 +76,7 @@ class FinansIslemController(BaseController[FinansIslem]):
             close_db = True
 
         try:
+            # 1. VALIDASYON AŞAMASI (DB işlemi olmadan yapılır)
             # İşlem türü validasyonu
             Validator.validate_required(data.get("tur"), "İşlem Türü")
             Validator.validate_choice(
@@ -90,12 +95,31 @@ class FinansIslemController(BaseController[FinansIslem]):
             Validator.validate_required(data.get("tarih"), "İşlem Tarihi")
             Validator.validate_date(data.get("tarih"))
             
+            islem_tur = data.get("tur", "")
+            hesap_id = int(data.get("hesap_id", 0))
+            tutar = float(data.get("tutar", 0))
+            
+            # Hedef hesap validasyonu (Transfer için)
+            hedef_hesap_id = None
+            if islem_tur == "Transfer":
+                Validator.validate_required(data.get("hedef_hesap_id"), "Hedef Hesap")
+                Validator.validate_integer(data.get("hedef_hesap_id"), "Hedef Hesap ID")
+                hedef_hesap_id = int(data.get("hedef_hesap_id", 0))
+                
+                # Aynı hesaba transfer kontrolü
+                if hesap_id == hedef_hesap_id:
+                    raise ValidationError(
+                        "Kaynak ve hedef hesap aynı olamaz",
+                        code="VAL_TRN_001",
+                        details={"hesap_id": hesap_id, "hedef_hesap_id": hedef_hesap_id}
+                    )
+            
             # Kategori ID validasyonu (opsiyonel)
             if data.get("kategori_id"):
                 Validator.validate_integer(data.get("kategori_id"), "Kategori ID'si")
                 Validator.validate_positive_number(data.get("kategori_id"), "Kategori ID'si")
                 
-                # Kategori var mı kontrol et
+                # Kategori var mı kontrol et (kategori_id ön kontrol)
                 kategori = db.query(AltKategori).filter(
                     AltKategori.id == data.get("kategori_id"),
                     AltKategori.aktif == True
@@ -108,36 +132,110 @@ class FinansIslemController(BaseController[FinansIslem]):
                         details={"kategori_id": data.get("kategori_id")}
                     )
             
-            # Transfer için hedef hesap validasyonu
-            if data.get("tur") == "Transfer":
-                Validator.validate_required(data.get("hedef_hesap_id"), "Hedef Hesap")
-                Validator.validate_integer(data.get("hedef_hesap_id"), "Hedef Hesap ID")
+            # 2. HESAP KONTROLÜ (Row lock ile atomic işlem için)
+            hesap = db.query(Hesap).filter(Hesap.id == hesap_id).with_for_update().first()
+            if not hesap:
+                raise NotFoundError(
+                    f"Hesap ID {hesap_id} bulunamadı",
+                    code="NOT_FOUND_ACC_001",
+                    details={"hesap_id": hesap_id}
+                )
             
+            hedef_hesap = None
+            if hedef_hesap_id:
+                hedef_hesap = db.query(Hesap).filter(Hesap.id == hedef_hesap_id).with_for_update().first()
+                if not hedef_hesap:
+                    raise NotFoundError(
+                        f"Hedef hesap ID {hedef_hesap_id} bulunamadı",
+                        code="NOT_FOUND_ACC_002",
+                        details={"hedef_hesap_id": hedef_hesap_id}
+                    )
+            
+            # 3. BAKIYE PRE-KONTROLÜ (Atomic transaction başlamadan önce)
+            if islem_tur == "Gider":
+                if hesap.bakiye < tutar:
+                    raise ValidationError(
+                        f"Yetersiz bakiye: {hesap.bakiye} TL < {tutar} TL",
+                        code="VAL_ACC_001",
+                        details={
+                            "hesap_id": hesap_id,
+                            "mevcut_bakiye": hesap.bakiye,
+                            "istenen_tutar": tutar
+                        }
+                    )
+            elif islem_tur == "Transfer":
+                if hesap.bakiye < tutar:
+                    raise ValidationError(
+                        f"Transfer için yetersiz bakiye: {hesap.bakiye} TL < {tutar} TL",
+                        code="VAL_TRN_002",
+                        details={
+                            "hesap_id": hesap_id,
+                            "mevcut_bakiye": hesap.bakiye,
+                            "transfer_tutari": tutar
+                        }
+                    )
+            
+            # 4. ATOMIC TRANSACTION (İşlem + Bakiye güncelleme)
             # İşlemi oluştur
             islem = FinansIslem(**data)
             db.add(islem)
-            db.commit()
-            db.refresh(islem)
+            db.flush()  # DB'ye yazıyoruz ama commit etmiyoruz
             
-            # Bakiyeleri güncelle
+            # Bakiyeleri güncelle (aynı transaction'ın içinde)
             hesap_controller = HesapController()
-            islem_tur = data.get("tur", "")
             
-            if islem_tur == "Transfer":
-                # Transfer için her iki hesabı güncelle
-                if data.get("hesap_id"):
-                    hesap_controller.hesap_bakiye_guncelle(int(data.get("hesap_id", 0)), data.get("tutar", 0), "Gider", db)
-                if data.get("hedef_hesap_id"):
-                    hesap_controller.hesap_bakiye_guncelle(int(data.get("hedef_hesap_id", 0)), data.get("tutar", 0), "Gelir", db)
-            else:
-                # Gelir/Gider işlemleri
-                if data.get("hesap_id"):
-                    hesap_controller.hesap_bakiye_guncelle(int(data.get("hesap_id", 0)), data.get("tutar", 0), islem_tur, db)
+            try:
+                if islem_tur == "Transfer":
+                    # Transfer: Kaynak hesaptan çıkar, hedef hesaba ekle
+                    # Directy bakiye güncelle (hesap_bakiye_guncelle ile iki kez commit oluşturur)
+                    hesap.bakiye -= tutar
+                    if hedef_hesap:
+                        hedef_hesap.bakiye += tutar
+                    
+                    self.logger.debug(
+                        f"Transfer atomic update: {hesap_id} (-{tutar}) → {hedef_hesap_id} (+{tutar})"
+                    )
+                else:
+                    # Gelir/Gider: Tek hesabı güncelle
+                    if islem_tur == "Gelir":
+                        hesap.bakiye += tutar
+                    elif islem_tur == "Gider":
+                        hesap.bakiye -= tutar
+                    
+                    self.logger.debug(f"{islem_tur} atomic update: {hesap_id} ({'+' if islem_tur == 'Gelir' else '-'}{tutar})")
+                
+                # Tüm değişiklikleri commit et (ATOMIC)
+                db.commit()
+                db.refresh(islem)
+                
+                self.logger.info(
+                    f"Finance transaction created (ID: {islem.id}, Type: {islem_tur}, "
+                    f"Amount: {tutar}, Account: {hesap_id})"
+                )
+                return islem
             
-            return islem
+            except (IntegrityError, SQLAlchemyError) as e:
+                db.rollback()
+                self.logger.error(f"Atomic transaction failed during balance update: {str(e)}")
+                raise DatabaseError(
+                    f"İşlem ve bakiye güncellemesi başarısız (atomic transaction): {str(e)}",
+                    code="DB_TRN_001",
+                    details={
+                        "islem_turu": islem_tur,
+                        "hesap_id": hesap_id,
+                        "tutar": tutar
+                    }
+                )
         
-        except (ValidationError, NotFoundError):
+        except (ValidationError, NotFoundError, DatabaseError):
             raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error during create: {str(e)}")
+            raise DatabaseError(
+                f"Beklenmeyen hata: {str(e)}",
+                code="DB_001",
+                details={"error_type": type(e).__name__}
+            )
         finally:
             if close_db and db is not None:
                 db.close()
@@ -293,119 +391,364 @@ class FinansIslemController(BaseController[FinansIslem]):
                 db.close()
 
     def update_with_balance_adjustment(self, id: int, data: dict, db: Optional[Session] = None) -> Optional[FinansIslem]:
-        """Kayıt güncelle ve hesap bakiyelerini uygun şekilde ayarla"""
+        """
+        Kayıt güncelle ve hesap bakiyelerini uygun şekilde ayarla (ATOMIC).
+        
+        Eski işlem bakiyeleri geri alınır, yeni işlem bakiyeleri uygulanır.
+        Tüm işlemler aynı transaction'da gerçekleştirilir.
+        
+        Args:
+            id (int): Güncellenecek işlem ID'si
+            data (dict): Yeni işlem verileri (tur, tutar, hesap_id, hedef_hesap_id, vb.)
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            FinansIslem | None: Güncellenen işlem veya None (bulunamadı)
+        
+        Raises:
+            ValidationError: Veri geçersiz ise veya yetersiz bakiye
+            NotFoundError: İşlem veya hesap bulunamadı ise
+            DatabaseError: Veritabanı hatası
+        
+        Example:
+            >>> data = {"tur": "Gider", "tutar": 3000}
+            >>> islem = controller.update_with_balance_adjustment(42, data)
+        """
         close_db = False
         if db is None:
             db = get_db()
             close_db = True
 
         try:
-            # Önce mevcut işlemi veritabanından al
-            # We need to query directly to ensure the object is bound to the current session
-            existing_islem: Optional[FinansIslem] = db.query(FinansIslem).filter(FinansIslem.id == id).first()
+            # 1. VALIDASYON: Yeni verileri kontrol et
+            if 'tur' in data:
+                Validator.validate_choice(data['tur'], "İşlem Türü", ["Gelir", "Gider", "Transfer"])
             
-            if existing_islem:
-                # Mevcut işlem verilerini sakla
-                old_tutar = existing_islem.tutar
-                old_tur = existing_islem.tur
-                old_hesap_id = existing_islem.hesap_id
-                old_hedef_hesap_id = existing_islem.hedef_hesap_id
+            if 'tutar' in data:
+                Validator.validate_positive_number(data['tutar'], "Tutar")
+            
+            if 'hesap_id' in data:
+                Validator.validate_integer(data['hesap_id'], "Hesap ID")
+            
+            if 'hedef_hesap_id' in data and data.get('tur') == 'Transfer':
+                Validator.validate_integer(data['hedef_hesap_id'], "Hedef Hesap ID")
+            
+            # 2. İşlemi veritabanından al (row lock ile)
+            existing_islem: Optional[FinansIslem] = db.query(FinansIslem).filter(
+                FinansIslem.id == id
+            ).with_for_update().first()
+            
+            if not existing_islem:
+                self.logger.warning(f"Finance transaction {id} not found for update")
+                return None
+            
+            # Eski değerleri sakla
+            old_tutar = existing_islem.tutar
+            old_tur = existing_islem.tur
+            old_hesap_id = existing_islem.hesap_id
+            old_hedef_hesap_id = existing_islem.hedef_hesap_id
+            
+            # Yeni değerleri belirle
+            new_tutar = data.get('tutar', old_tutar)
+            new_tur = data.get('tur', old_tur)
+            new_hesap_id = data.get('hesap_id', old_hesap_id)
+            new_hedef_hesap_id = data.get('hedef_hesap_id', old_hedef_hesap_id)
+            
+            # Transfer tip değişikliğinde hedef hesap kontrolü
+            if new_tur == "Transfer" and old_tur != "Transfer":
+                if new_hesap_id == new_hedef_hesap_id:
+                    raise ValidationError(
+                        "Kaynak ve hedef hesap aynı olamaz",
+                        code="VAL_TRN_001",
+                        details={"hesap_id": new_hesap_id, "hedef_hesap_id": new_hedef_hesap_id}
+                    )
+            
+            # 3. HESAP KONTROLÜ VE LOCK (Row lock ile atomic işlem için)
+            hesaplar = {}
+            
+            # Eski hesapları lock al
+            if old_hesap_id:
+                hesaplar['old_hesap'] = db.query(Hesap).filter(
+                    Hesap.id == old_hesap_id
+                ).with_for_update().first()
+                if not hesaplar['old_hesap']:
+                    raise NotFoundError(
+                        f"Eski hesap ID {old_hesap_id} bulunamadı",
+                        code="NOT_FOUND_ACC_001",
+                        details={"hesap_id": old_hesap_id}
+                    )
+            
+            if old_hedef_hesap_id:
+                hesaplar['old_hedef_hesap'] = db.query(Hesap).filter(
+                    Hesap.id == old_hedef_hesap_id
+                ).with_for_update().first()
+                if not hesaplar['old_hedef_hesap']:
+                    raise NotFoundError(
+                        f"Eski hedef hesap ID {old_hedef_hesap_id} bulunamadı",
+                        code="NOT_FOUND_ACC_002",
+                        details={"hedef_hesap_id": old_hedef_hesap_id}
+                    )
+            
+            # Yeni hesapları lock al
+            if new_hesap_id:
+                hesaplar['new_hesap'] = db.query(Hesap).filter(
+                    Hesap.id == new_hesap_id
+                ).with_for_update().first()
+                if not hesaplar['new_hesap']:
+                    raise NotFoundError(
+                        f"Yeni hesap ID {new_hesap_id} bulunamadı",
+                        code="NOT_FOUND_ACC_001",
+                        details={"hesap_id": new_hesap_id}
+                    )
+            
+            if new_hedef_hesap_id:
+                hesaplar['new_hedef_hesap'] = db.query(Hesap).filter(
+                    Hesap.id == new_hedef_hesap_id
+                ).with_for_update().first()
+                if not hesaplar['new_hedef_hesap']:
+                    raise NotFoundError(
+                        f"Yeni hedef hesap ID {new_hedef_hesap_id} bulunamadı",
+                        code="NOT_FOUND_ACC_002",
+                        details={"hedef_hesap_id": new_hedef_hesap_id}
+                    )
+            
+            # 4. BAKIYE PRE-KONTROLÜ
+            # Yeni işlem için bakiye kontrolü
+            if new_tur == "Gider":
+                yeni_hesap = hesaplar.get('new_hesap', hesaplar.get('old_hesap'))
+                if yeni_hesap and (yeni_hesap.bakiye < new_tutar):
+                    raise ValidationError(
+                        f"Yetersiz bakiye: {yeni_hesap.bakiye} TL < {new_tutar} TL",
+                        code="VAL_ACC_001",
+                        details={
+                            "hesap_id": new_hesap_id,
+                            "mevcut_bakiye": yeni_hesap.bakiye,
+                            "istenen_tutar": new_tutar
+                        }
+                    )
+            elif new_tur == "Transfer":
+                yeni_hesap = hesaplar.get('new_hesap', hesaplar.get('old_hesap'))
+                if yeni_hesap and (yeni_hesap.bakiye < new_tutar):
+                    raise ValidationError(
+                        f"Transfer için yetersiz bakiye: {yeni_hesap.bakiye} TL < {new_tutar} TL",
+                        code="VAL_TRN_002",
+                        details={
+                            "hesap_id": new_hesap_id,
+                            "mevcut_bakiye": yeni_hesap.bakiye,
+                            "transfer_tutari": new_tutar
+                        }
+                    )
+            
+            # 5. ATOMIC TRANSACTION (Bakiye düzeltmeleri + Güncelleme)
+            try:
+                # Eski işlemi geri al
+                if old_tur == "Transfer":
+                    if hesaplar.get('old_hesap'):
+                        hesaplar['old_hesap'].bakiye += old_tutar
+                    if hesaplar.get('old_hedef_hesap'):
+                        hesaplar['old_hedef_hesap'].bakiye -= old_tutar
+                    
+                    self.logger.debug(f"Reverse old transfer: {old_hesap_id} (+{old_tutar}) ← {old_hedef_hesap_id}")
                 
-                # Yeni verileri güncelle
+                elif old_tur == "Gelir":
+                    if hesaplar.get('old_hesap'):
+                        hesaplar['old_hesap'].bakiye -= old_tutar
+                    
+                    self.logger.debug(f"Reverse old income: {old_hesap_id} (-{old_tutar})")
+                
+                elif old_tur == "Gider":
+                    if hesaplar.get('old_hesap'):
+                        hesaplar['old_hesap'].bakiye += old_tutar
+                    
+                    self.logger.debug(f"Reverse old expense: {old_hesap_id} (+{old_tutar})")
+                
+                # Yeni işlemi uygula
+                if new_tur == "Transfer":
+                    if hesaplar.get('new_hesap'):
+                        hesaplar['new_hesap'].bakiye -= new_tutar
+                    if hesaplar.get('new_hedef_hesap'):
+                        hesaplar['new_hedef_hesap'].bakiye += new_tutar
+                    
+                    self.logger.debug(f"Apply new transfer: {new_hesap_id} (-{new_tutar}) → {new_hedef_hesap_id}")
+                
+                elif new_tur == "Gelir":
+                    if hesaplar.get('new_hesap'):
+                        hesaplar['new_hesap'].bakiye += new_tutar
+                    
+                    self.logger.debug(f"Apply new income: {new_hesap_id} (+{new_tutar})")
+                
+                elif new_tur == "Gider":
+                    if hesaplar.get('new_hesap'):
+                        hesaplar['new_hesap'].bakiye -= new_tutar
+                    
+                    self.logger.debug(f"Apply new expense: {new_hesap_id} (-{new_tutar})")
+                
+                # İşlem kaydını güncelle
                 for key, value in data.items():
-                    setattr(existing_islem, key, value)
+                    if hasattr(existing_islem, key):
+                        setattr(existing_islem, key, value)
                 
+                # Tüm değişiklikleri commit et (ATOMIC)
                 db.commit()
                 db.refresh(existing_islem)
                 
-                # Hesap bakiyelerini güncelle
-                new_tutar = data.get('tutar', old_tutar)
-                new_tur = data.get('tur', old_tur)
-                new_hesap_id = data.get('hesap_id', old_hesap_id)
-                new_hedef_hesap_id = data.get('hedef_hesap_id', old_hedef_hesap_id)
-                
-                hesap_controller = HesapController()
-                
-                # Transfer işlemleri için
-                if old_tur == "Transfer" or new_tur == "Transfer":
-                    # Eski transferi geri al
-                    if old_tur == "Transfer":
-                        # Kaynak hesaptan çıkan parayı geri ekle
-                        if old_hesap_id is not None:
-                            hesap_controller.hesap_bakiye_guncelle(old_hesap_id, old_tutar, "Gelir", db)
-                        # Hedef hesaba gelen parayı geri çıkar
-                        if old_hedef_hesap_id is not None:
-                            hesap_controller.hesap_bakiye_guncelle(old_hedef_hesap_id, old_tutar, "Gider", db)
-                    
-                    # Yeni transferi uygula
-                    if new_tur == "Transfer":
-                        # Kaynak hesaptan para çıkart
-                        if new_hesap_id is not None:
-                            hesap_controller.hesap_bakiye_guncelle(new_hesap_id, new_tutar, "Gider", db)
-                        # Hedef hesaba para ekle
-                        if new_hedef_hesap_id is not None:
-                            hesap_controller.hesap_bakiye_guncelle(new_hedef_hesap_id, new_tutar, "Gelir", db)
-                else:
-                    # Normal gelir/gider işlemleri
-                    # Eski işlemi geri al
-                    if old_hesap_id is not None:
-                        if old_tur == "Gelir":
-                            hesap_controller.hesap_bakiye_guncelle(old_hesap_id, old_tutar, "Gider", db)
-                        else:  # Gider
-                            hesap_controller.hesap_bakiye_guncelle(old_hesap_id, old_tutar, "Gelir", db)
-                    
-                    # Yeni işlemi uygula
-                    if new_hesap_id is not None:
-                        if new_tur == "Gelir":
-                            hesap_controller.hesap_bakiye_guncelle(new_hesap_id, new_tutar, "Gelir", db)
-                        else:  # Gider
-                            hesap_controller.hesap_bakiye_guncelle(new_hesap_id, new_tutar, "Gider", db)
-                
+                self.logger.info(
+                    f"Finance transaction updated (ID: {id}, "
+                    f"Type: {old_tur}→{new_tur}, Amount: {old_tutar}→{new_tutar})"
+                )
                 return existing_islem
-            return None
+            
+            except (IntegrityError, SQLAlchemyError) as e:
+                db.rollback()
+                self.logger.error(f"Atomic transaction failed during update: {str(e)}")
+                raise DatabaseError(
+                    f"İşlem güncelleme ve bakiye düzeltmesi başarısız (atomic transaction): {str(e)}",
+                    code="DB_UPD_001",
+                    details={
+                        "islem_id": id,
+                        "old_tur": old_tur,
+                        "new_tur": new_tur
+                    }
+                )
+        
+        except (ValidationError, NotFoundError, DatabaseError):
+            raise
+        except Exception as e:
+            db.rollback() if not close_db else None
+            self.logger.error(f"Unexpected error during update: {str(e)}")
+            raise DatabaseError(
+                f"Beklenmeyen hata: {str(e)}",
+                code="DB_001",
+                details={"error_type": type(e).__name__}
+            )
         finally:
             if close_db and db is not None:
                 db.close()
 
     def delete(self, id: int, db: Optional[Session] = None) -> bool:
-        """Kayıt sil ve transfer işlemleri için bakiyeleri güncelle"""
+        """
+        İşlemi sil ve hesap bakiyelerini geri al (ATOMIC).
+        
+        İşlem silme ve bakiye düzeltmeleri aynı transaction'da yapılır.
+        Herhangi bir hata durumunda tüm değişiklikler geri alınır.
+        
+        Args:
+            id (int): Silinecek işlem ID'si
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            bool: True (başarılı), False (işlem bulunamadı)
+        
+        Raises:
+            DatabaseError: Veritabanı hatası
+        
+        Example:
+            >>> success = controller.delete(42)
+        """
         close_db = False
         if db is None:
             db = get_db()
             close_db = True
 
         try:
-            # Önce işlemi veritabanından al
-            # We need to query directly to ensure the object is bound to the current session
-            islem: Optional[FinansIslem] = db.query(FinansIslem).filter(FinansIslem.id == id).first()
+            # 1. İşlemi veritabanından al (row lock ile atomic işlem için)
+            islem: Optional[FinansIslem] = db.query(FinansIslem).filter(
+                FinansIslem.id == id
+            ).with_for_update().first()
             
-            if islem:
-                # Hesap controller'ı oluştur
-                hesap_controller = HesapController()
+            if not islem:
+                self.logger.warning(f"Finance transaction {id} not found for deletion")
+                return False
+            
+            # Silme öncesi log için veri sakla
+            islem_tur = islem.tur
+            hesap_id = islem.hesap_id
+            hedef_hesap_id = islem.hedef_hesap_id
+            tutar = islem.tutar
+            
+            # 2. ATOMIC TRANSACTION (Bakiye düzeltmeleri)
+            try:
+                # Hesapları lock al
+                if hesap_id:
+                    hesap = db.query(Hesap).filter(Hesap.id == hesap_id).with_for_update().first()
+                    if not hesap:
+                        raise NotFoundError(
+                            f"Hesap ID {hesap_id} bulunamadı",
+                            code="NOT_FOUND_ACC_001",
+                            details={"hesap_id": hesap_id}
+                        )
                 
-                # İşlem türüne göre bakiyeleri geri al
-                if islem.tur == "Transfer":
-                    # Kaynak hesaptan çıkan parayı geri ekle (Gelir gibi)
-                    if islem.hesap_id is not None:
-                        hesap_controller.hesap_bakiye_guncelle(islem.hesap_id, islem.tutar, "Gelir", db)
+                hedef_hesap = None
+                if hedef_hesap_id:
+                    hedef_hesap = db.query(Hesap).filter(Hesap.id == hedef_hesap_id).with_for_update().first()
+                    if not hedef_hesap:
+                        raise NotFoundError(
+                            f"Hedef hesap ID {hedef_hesap_id} bulunamadı",
+                            code="NOT_FOUND_ACC_002",
+                            details={"hedef_hesap_id": hedef_hesap_id}
+                        )
+                
+                # Bakiyeleri geri al (işlem türüne göre)
+                if islem_tur == "Transfer":
+                    # Transfer işlemini geri al:
+                    # - Kaynak hesaptan çıkan parayı geri ekle
+                    # - Hedef hesaba gelen parayı geri çıkar
+                    if hesap:
+                        hesap.bakiye += tutar
+                    if hedef_hesap:
+                        hedef_hesap.bakiye -= tutar
                     
-                    # Hedef hesaba gelen parayı geri çıkar (Gider gibi)
-                    if islem.hedef_hesap_id is not None:
-                        hesap_controller.hesap_bakiye_guncelle(islem.hedef_hesap_id, islem.tutar, "Gider", db)
-                elif islem.tur == "Gelir":
+                    self.logger.debug(f"Transfer reversal: {hesap_id} (+{tutar}) ← {hedef_hesap_id} (-{tutar})")
+                    
+                elif islem_tur == "Gelir":
                     # Gelir işlemi silinirse, hesaptan parayı çıkar
-                    if islem.hesap_id is not None:
-                        hesap_controller.hesap_bakiye_guncelle(islem.hesap_id, islem.tutar, "Gider", db)
-                elif islem.tur == "Gider":
+                    if hesap:
+                        hesap.bakiye -= tutar
+                    
+                    self.logger.debug(f"Income reversal: {hesap_id} (-{tutar})")
+                    
+                elif islem_tur == "Gider":
                     # Gider işlemi silinirse, hesaba parayı geri ekle
-                    if islem.hesap_id is not None:
-                        hesap_controller.hesap_bakiye_guncelle(islem.hesap_id, islem.tutar, "Gelir", db)
+                    if hesap:
+                        hesap.bakiye += tutar
+                    
+                    self.logger.debug(f"Expense reversal: {hesap_id} (+{tutar})")
                 
                 # İşlemi sil
                 db.delete(islem)
+                
+                # Tüm değişiklikleri commit et (ATOMIC)
                 db.commit()
+                
+                self.logger.info(
+                    f"Finance transaction deleted (ID: {id}, Type: {islem_tur}, "
+                    f"Amount: {tutar}, Account: {hesap_id})"
+                )
                 return True
-            return False
+            
+            except (IntegrityError, SQLAlchemyError) as e:
+                db.rollback()
+                self.logger.error(f"Atomic transaction failed during delete: {str(e)}")
+                raise DatabaseError(
+                    f"İşlem silme ve bakiye düzeltmesi başarısız (atomic transaction): {str(e)}",
+                    code="DB_DEL_001",
+                    details={
+                        "islem_id": id,
+                        "islem_turu": islem_tur,
+                        "hesap_id": hesap_id
+                    }
+                )
+        
+        except (NotFoundError, DatabaseError):
+            raise
+        except Exception as e:
+            db.rollback() if not close_db else None
+            self.logger.error(f"Unexpected error during delete: {str(e)}")
+            raise DatabaseError(
+                f"Beklenmeyen hata: {str(e)}",
+                code="DB_001",
+                details={"error_type": type(e).__name__}
+            )
         finally:
             if close_db and db is not None:
                 db.close()

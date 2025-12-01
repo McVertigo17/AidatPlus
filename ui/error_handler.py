@@ -28,17 +28,17 @@ from models.exceptions import (
 )
 
 
-def show_error(title: str, message: str, parent: Optional[tk.Misc] = None) -> None:
+def show_error(parent: Optional[tk.Misc] = None, title: str = "Hata", message: str = "") -> None:
     """
     Hata dialog göster.
     
     Args:
+        parent (tk.Misc, optional): Parent widget
         title (str): Dialog başlığı
         message (str): Hata mesajı (Türkçe)
-        parent (tk.Misc, optional): Parent widget
     
     Example:
-        >>> show_error("Hata", "Bu işlem başarısız oldu")
+        >>> show_error(parent=root, title="Hata", message="Bu işlem başarısız oldu")
     """
     if parent is not None:
         messagebox.showerror(title, message, parent=parent)
@@ -46,17 +46,17 @@ def show_error(title: str, message: str, parent: Optional[tk.Misc] = None) -> No
         messagebox.showerror(title, message)
 
 
-def show_warning(title: str, message: str, parent: Optional[tk.Misc] = None) -> None:
+def show_warning(parent: Optional[tk.Misc] = None, title: str = "Uyarı", message: str = "") -> None:
     """
     Uyarı dialog göster.
     
     Args:
+        parent (tk.Misc, optional): Parent widget
         title (str): Dialog başlığı
         message (str): Uyarı mesajı (Türkçe)
-        parent (tk.Misc, optional): Parent widget
     
     Example:
-        >>> show_warning("Uyarı", "Bu işlemi onaylıyor musunuz?")
+        >>> show_warning(parent=root, title="Uyarı", message="Bu işlemi onaylıyor musunuz?")
     """
     if parent is not None:
         messagebox.showwarning(title, message, parent=parent)
@@ -64,17 +64,17 @@ def show_warning(title: str, message: str, parent: Optional[tk.Misc] = None) -> 
         messagebox.showwarning(title, message)
 
 
-def show_success(title: str, message: str, parent: Optional[tk.Misc] = None) -> None:
+def show_success(parent: Optional[tk.Misc] = None, title: str = "Başarılı", message: str = "") -> None:
     """
     Başarı mesajı göster.
     
     Args:
+        parent (tk.Misc, optional): Parent widget
         title (str): Dialog başlığı
         message (str): Başarı mesajı (Türkçe)
-        parent (tk.Misc, optional): Parent widget
     
     Example:
-        >>> show_success("Başarılı", "Kayıt başarıyla oluşturuldu")
+        >>> show_success(parent=root, title="Başarılı", message="Kayıt başarıyla oluşturuldu")
     """
     if parent is not None:
         messagebox.showinfo(title, message, parent=parent)
@@ -104,71 +104,71 @@ def handle_exception(
     
     if isinstance(exception, ValidationError):
         show_error(
-            "Doğrulama Hatası",
-            f"Lütfen girdilerinizi kontrol edin:\n\n{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Doğrulama Hatası",
+            message=f"Lütfen girdilerinizi kontrol edin:\n\n{exception.message}"
         )
     
     elif isinstance(exception, DuplicateError):
         show_error(
-            "Benzersizlik Hatası",
-            f"{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Benzersizlik Hatası",
+            message=f"{exception.message}"
         )
     
     elif isinstance(exception, NotFoundError):
         show_error(
-            "Bulunamadı",
-            f"{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Bulunamadı",
+            message=f"{exception.message}"
         )
     
     elif isinstance(exception, DatabaseError):
         show_error(
-            "Veritabanı Hatası",
-            f"Veritabanı işlemi başarısız oldu:\n\n{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Veritabanı Hatası",
+            message=f"Veritabanı işlemi başarısız oldu:\n\n{exception.message}"
         )
     
     elif isinstance(exception, FileError):
         show_error(
-            "Dosya Hatası",
-            f"Dosya işlemi başarısız oldu:\n\n{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Dosya Hatası",
+            message=f"Dosya işlemi başarısız oldu:\n\n{exception.message}"
         )
     
     elif isinstance(exception, ConfigError):
         show_error(
-            "Konfigürasyon Hatası",
-            f"Uygulama konfigürasyonunda hata:\n\n{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Konfigürasyon Hatası",
+            message=f"Uygulama konfigürasyonunda hata:\n\n{exception.message}"
         )
     
     elif isinstance(exception, BusinessLogicError):
         show_warning(
-            "İş Kuralı",
-            f"{exception.message}",
-            parent=parent
+            parent=parent,
+            title="İş Kuralı",
+            message=f"{exception.message}"
         )
     
     elif isinstance(exception, InsufficientDataError):
         show_warning(
-            "Yetersiz Veri",
-            f"{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Yetersiz Veri",
+            message=f"{exception.message}"
         )
     
     elif isinstance(exception, AidatPlusException):
         show_error(
-            "Hata",
-            f"{exception.message}",
-            parent=parent
+            parent=parent,
+            title="Hata",
+            message=f"{exception.message}"
         )
     
     else:
         # Bilinmeyen exception
         error_message = f"Beklenmeyen hata oluştu:\n\n{str(exception)}"
-        show_error("Sistem Hatası", error_message, parent=parent)
+        show_error(parent=parent, title="Sistem Hatası", message=error_message)
         
         # Fallback callback çalıştır
         if fallback_callback:
@@ -220,7 +220,7 @@ def validate_form_inputs(
         for field in empty_fields:
             message += f"  • {field}\n"
         
-        show_error("Eksik Alan", message.strip(), parent=parent)
+        show_error(parent=parent, title="Eksik Alan", message=message.strip())
         return False
     
     return True
@@ -273,7 +273,7 @@ class ErrorHandler:
         if exc_type is None:
             # Exception yoksa, başarı mesajı göster
             if self.show_success_msg:
-                show_success("Başarılı", self.success_message, parent=self.parent)
+                show_success(parent=self.parent, title="Başarılı", message=self.success_message)
             return True
         
         if issubclass(exc_type, AidatPlusException):
@@ -328,24 +328,24 @@ class UIValidator:
             value = entry_widget.get().strip()
         
         if not value:
-            show_error("Boş Alan", f"{field_name} boş bırakılamaz", parent=parent)
+            show_error(parent=parent, title="Boş Alan", message=f"{field_name} boş bırakılamaz")
             entry_widget.focus()
             return None
         
         if len(value) < min_length:
             show_error(
-                "Hata",
-                f"{field_name} en az {min_length} karakter olmalıdır",
-                parent=parent
+                parent=parent,
+                title="Hata",
+                message=f"{field_name} en az {min_length} karakter olmalıdır"
             )
             entry_widget.focus()
             return None
         
         if len(value) > max_length:
             show_error(
-                "Hata",
-                f"{field_name} maksimum {max_length} karakter olmalıdır",
-                parent=parent
+                parent=parent,
+                title="Hata",
+                message=f"{field_name} maksimum {max_length} karakter olmalıdır"
             )
             entry_widget.focus()
             return None
@@ -376,24 +376,24 @@ class UIValidator:
         value = entry_widget.get().strip()
         
         if not value:
-            show_error("Boş Alan", f"{field_name} boş bırakılamaz", parent=parent)
+            show_error(parent=parent, title="Boş Alan", message=f"{field_name} boş bırakılamaz")
             entry_widget.focus()
             return None
         
         try:
             num = float(value)
         except ValueError:
-            show_error("Hata", f"{field_name} sayı olmalıdır", parent=parent)
+            show_error(parent=parent, title="Hata", message=f"{field_name} sayı olmalıdır")
             entry_widget.focus()
             return None
         
         if not allow_negative and num < 0:
-            show_error("Hata", f"{field_name} negatif olamaz", parent=parent)
+            show_error(parent=parent, title="Hata", message=f"{field_name} negatif olamaz")
             entry_widget.focus()
             return None
         
         if not allow_zero and num == 0:
-            show_error("Hata", f"{field_name} sıfır olamaz", parent=parent)
+            show_error(parent=parent, title="Hata", message=f"{field_name} sıfır olamaz")
             entry_widget.focus()
             return None
         
@@ -419,7 +419,7 @@ class UIValidator:
         value = combobox_widget.get().strip()
         
         if not value:
-            show_error("Boş Alan", f"Lütfen {field_name} seçin", parent=parent)
+            show_error(parent=parent, title="Boş Alan", message=f"Lütfen {field_name} seçin")
             combobox_widget.focus()
             return None
         

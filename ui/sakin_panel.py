@@ -142,15 +142,15 @@ class SakinPanel(BasePanel):
         self.aktif_sakin_tree.heading("notlar", text="Notlar")
 
         # Kolon genişlikleri ve ortalaması
-        self.aktif_sakin_tree.column("id", width=50, anchor="center")
-        self.aktif_sakin_tree.column("ad_soyad", width=150, anchor="center")
-        self.aktif_sakin_tree.column("rutbe", width=120, anchor="center")
-        self.aktif_sakin_tree.column("daire", width=100, anchor="center")
-        self.aktif_sakin_tree.column("telefon", width=100, anchor="center")
-        self.aktif_sakin_tree.column("email", width=120, anchor="center")
-        self.aktif_sakin_tree.column("aile_sayisi", width=100, anchor="center")
-        self.aktif_sakin_tree.column("tahsis_tarihi", width=100, anchor="center")
-        self.aktif_sakin_tree.column("giris_tarihi", width=100, anchor="center")
+        self.aktif_sakin_tree.column("id", width=10, anchor="center")
+        self.aktif_sakin_tree.column("ad_soyad", width=120, anchor="center")
+        self.aktif_sakin_tree.column("rutbe", width=60, anchor="center")
+        self.aktif_sakin_tree.column("daire", width=170, anchor="center")
+        self.aktif_sakin_tree.column("telefon", width=40, anchor="center")
+        self.aktif_sakin_tree.column("email", width=150, anchor="center")
+        self.aktif_sakin_tree.column("aile_sayisi", width=40, anchor="center")
+        self.aktif_sakin_tree.column("tahsis_tarihi", width=30, anchor="center")
+        self.aktif_sakin_tree.column("giris_tarihi", width=30, anchor="center")
         self.aktif_sakin_tree.column("notlar", width=150, anchor="center")
 
         # Scrollbar
@@ -212,16 +212,16 @@ class SakinPanel(BasePanel):
         self.pasif_sakin_tree.heading("cikis_tarihi", text="Çıkış Tarihi")
 
         # Kolon genişlikleri ve ortalaması
-        self.pasif_sakin_tree.column("id", width=50, anchor="center")
-        self.pasif_sakin_tree.column("ad_soyad", width=150, anchor="center")
-        self.pasif_sakin_tree.column("rutbe", width=120, anchor="center")
-        self.pasif_sakin_tree.column("daire", width=120, anchor="center")
-        self.pasif_sakin_tree.column("telefon", width=100, anchor="center")
+        self.pasif_sakin_tree.column("id", width=20, anchor="center")
+        self.pasif_sakin_tree.column("ad_soyad", width=120, anchor="center")
+        self.pasif_sakin_tree.column("rutbe", width=60, anchor="center")
+        self.pasif_sakin_tree.column("daire", width=170, anchor="center")
+        self.pasif_sakin_tree.column("telefon", width=40, anchor="center")
         self.pasif_sakin_tree.column("email", width=150, anchor="center")
-        self.pasif_sakin_tree.column("aile_sayisi", width=100, anchor="center")
-        self.pasif_sakin_tree.column("tahsis_tarihi", width=100, anchor="center")
-        self.pasif_sakin_tree.column("giris_tarihi", width=100, anchor="center")
-        self.pasif_sakin_tree.column("cikis_tarihi", width=100, anchor="center")
+        self.pasif_sakin_tree.column("aile_sayisi", width=30, anchor="center")
+        self.pasif_sakin_tree.column("tahsis_tarihi", width=30, anchor="center")
+        self.pasif_sakin_tree.column("giris_tarihi", width=30, anchor="center")
+        self.pasif_sakin_tree.column("cikis_tarihi", width=30, anchor="center")
 
         # Scrollbar
         scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.pasif_sakin_tree.yview)
@@ -490,14 +490,14 @@ class SakinPanel(BasePanel):
         # Tarih validasyonu
         cikis_tarih = tarih_entry.get().strip()
         if not cikis_tarih:
-            show_error("Boş Alan", "Ayrılış tarihi zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Ayrılış tarihi zorunludur!")
             tarih_entry.focus()
             return
             
         try:
             datetime.strptime(cikis_tarih, "%d.%m.%Y")
         except ValueError:
-            show_error("Hata", "Ayrılış tarihi GG.AA.YYYY formatında olmalıdır!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Ayrılış tarihi GG.AA.YYYY formatında olmalıdır!")
             tarih_entry.focus()
             return
             
@@ -508,28 +508,28 @@ class SakinPanel(BasePanel):
         """Pasif yapma işlemini onayla"""
         try:
             if not cikis_tarih.strip():
-                show_error("Eksik Alan", "Ayrılış tarihi zorunludur!", parent=modal)
+                show_error(parent=modal, title="Eksik Alan", message="Ayrılış tarihi zorunludur!")
                 return
 
             # Tarihi parse et
             try:
                 cikis_tarihi = datetime.strptime(cikis_tarih.strip(), "%d.%m.%Y")
             except ValueError:
-                show_error("Hata", "Ayrılış tarihi GG.AA.YYYY formatında olmalıdır!", parent=modal)
+                show_error(parent=modal, title="Hata", message="Ayrılış tarihi GG.AA.YYYY formatında olmalıdır!")
                 return
 
             # Pasif yap
             if self.sakin_controller.pasif_yap(sakin_id, cikis_tarihi):
-                show_success("Başarılı", f"Sakin #{sakin_id} başarıyla pasif yapıldı!", parent=modal)
+                show_success(parent=modal, title="Başarılı", message=f"Sakin #{sakin_id} başarıyla pasif yapıldı!")
             else:
-                show_error("Bulunamadı", f"Sakin #{sakin_id} bulunamadı!", parent=modal)
+                show_error(parent=modal, title="Bulunamadı", message=f"Sakin #{sakin_id} bulunamadı!")
                 return
 
         except NotFoundError as e:
-            show_error("Bulunamadı", str(e.message), parent=modal)
+            show_error(parent=modal, title="Bulunamadı", message=str(e.message))
             return
         except DatabaseError as e:
-            show_error("Veritabanı Hatası", str(e.message), parent=modal)
+            show_error(parent=modal, title="Veritabanı Hatası", message=str(e.message))
             return
         except Exception as e:
             handle_exception(e, parent=modal)
@@ -701,7 +701,7 @@ class SakinPanel(BasePanel):
         # Ad Soyad
         ad_soyad = ad_entry.get().strip()
         if not ad_soyad:
-            show_error("Boş Alan", "Ad Soyad zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Ad Soyad zorunludur!")
             ad_entry.focus()
             return
 
@@ -717,42 +717,42 @@ class SakinPanel(BasePanel):
         # Aile Birey Sayısı
         aile_sayisi = aile_sayisi_entry.get().strip()
         if not aile_sayisi:
-            show_error("Boş Alan", "Aile Birey Sayısı zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Aile Birey Sayısı zorunludur!")
             aile_sayisi_entry.focus()
             return
 
         try:
             int(aile_sayisi)
         except ValueError:
-            show_error("Hata", "Aile Birey Sayısı sayı olmalıdır!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Aile Birey Sayısı sayı olmalıdır!")
             aile_sayisi_entry.focus()
             return
 
         # Tahsis Tarihi
         tahsis_tarih = tahsis_tarih_entry.get().strip()
         if not tahsis_tarih:
-            show_error("Boş Alan", "Tahsis Tarihi zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Tahsis Tarihi zorunludur!")
             tahsis_tarih_entry.focus()
             return
 
         try:
             tahsis_tarihi = datetime.strptime(tahsis_tarih, "%d.%m.%Y")
         except ValueError:
-            show_error("Hata", "Tahsis Tarihi GG.AA.YYYY formatında olmalıdır!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Tahsis Tarihi GG.AA.YYYY formatında olmalıdır!")
             tahsis_tarih_entry.focus()
             return
 
         # Giriş Tarihi
         giris_tarihi = giris_tarihi_entry.get().strip()
         if not giris_tarihi:
-            show_error("Boş Alan", "Giriş Tarihi zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Giriş Tarihi zorunludur!")
             giris_tarihi_entry.focus()
             return
 
         try:
             giris_tarihi_parsed = datetime.strptime(giris_tarihi, "%d.%m.%Y")
         except ValueError:
-            show_error("Hata", "Giriş Tarihi GG.AA.YYYY formatında olmalıdır!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Giriş Tarihi GG.AA.YYYY formatında olmalıdır!")
             giris_tarihi_entry.focus()
             return
 
@@ -762,7 +762,7 @@ class SakinPanel(BasePanel):
         # Seçilen daireyi al
         selected_daire = daire_combo.get().strip()
         if selected_daire == "Seçiniz...":
-            show_error("Seçim Yapılmadı", "Lütfen bir daire seçin!", parent=modal)
+            show_error(parent=modal, title="Seçim Yapılmadı", message="Lütfen bir daire seçin!")
             daire_combo.focus()
             return
 
@@ -771,14 +771,14 @@ class SakinPanel(BasePanel):
         # Split from the right to handle lojman names with spaces
         parts = selected_daire.rsplit(" ", 1)
         if len(parts) != 2:
-            show_error("Hata", "Seçilen daire formatı geçersiz!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Seçilen daire formatı geçersiz!")
             daire_combo.focus()
             return
             
         blok_daire_part = parts[1]  # "A-101"
         blok_daire_parts = blok_daire_part.split("-", 1)  # Max split=1 for daire numbers like "01-A"
         if len(blok_daire_parts) != 2:
-            show_error("Hata", "Seçilen daire formatı geçersiz!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Seçilen daire formatı geçersiz!")
             daire_combo.focus()
             return
             
@@ -792,7 +792,7 @@ class SakinPanel(BasePanel):
         )
 
         if not daire:
-            show_error("Bulunamadı", "Seçilen daire bulunamadı!", parent=modal)
+            show_error(parent=modal, title="Bulunamadı", message="Seçilen daire bulunamadı!")
             daire_combo.focus()
             return
 
@@ -842,16 +842,16 @@ class SakinPanel(BasePanel):
                                      f"Eski arşiv kaydı korunmuştur (ID: #{pasif_sakin_id})", parent=modal)
 
         except DuplicateError as e:
-            show_error("Yinelenen Kayıt", str(e.message), parent=modal)
+            show_error(parent=modal, title="Yinelenen Kayıt", message=str(e.message))
             return
         except ValidationError as e:
-            show_error("Validasyon Hatası", str(e.message), parent=modal)
+            show_error(parent=modal, title="Validasyon Hatası", message=str(e.message))
             return
         except NotFoundError as e:
-            show_error("Bulunamadı", str(e.message), parent=modal)
+            show_error(parent=modal, title="Bulunamadı", message=str(e.message))
             return
         except DatabaseError as e:
-            show_error("Veritabanı Hatası", str(e.message), parent=modal)
+            show_error(parent=modal, title="Veritabanı Hatası", message=str(e.message))
             return
         except Exception as e:
             handle_exception(e, parent=modal)
@@ -1022,7 +1022,7 @@ class SakinPanel(BasePanel):
         # Ad Soyad
         ad_soyad = ad_entry.get().strip()
         if not ad_soyad:
-            show_error("Boş Alan", "Ad Soyad zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Ad Soyad zorunludur!")
             ad_entry.focus()
             return
 
@@ -1038,42 +1038,42 @@ class SakinPanel(BasePanel):
         # Aile Birey Sayısı
         aile_sayisi = aile_sayisi_entry.get().strip()
         if not aile_sayisi:
-            show_error("Boş Alan", "Aile Birey Sayısı zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Aile Birey Sayısı zorunludur!")
             aile_sayisi_entry.focus()
             return
 
         try:
             int(aile_sayisi)
         except ValueError:
-            show_error("Hata", "Aile Birey Sayısı sayı olmalıdır!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Aile Birey Sayısı sayı olmalıdır!")
             aile_sayisi_entry.focus()
             return
 
         # Tahsis Tarihi
         tahsis_tarih = tahsis_tarih_entry.get().strip()
         if not tahsis_tarih:
-            show_error("Boş Alan", "Tahsis Tarihi zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Tahsis Tarihi zorunludur!")
             tahsis_tarih_entry.focus()
             return
 
         try:
             tahsis_tarihi = datetime.strptime(tahsis_tarih, "%d.%m.%Y")
         except ValueError:
-            show_error("Hata", "Tahsis Tarihi GG.AA.YYYY formatında olmalıdır!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Tahsis Tarihi GG.AA.YYYY formatında olmalıdır!")
             tahsis_tarih_entry.focus()
             return
 
         # Giriş Tarihi
         giris_tarihi = giris_tarihi_entry.get().strip()
         if not giris_tarihi:
-            show_error("Boş Alan", "Giriş Tarihi zorunludur!", parent=modal)
+            show_error(parent=modal, title="Boş Alan", message="Giriş Tarihi zorunludur!")
             giris_tarihi_entry.focus()
             return
 
         try:
             giris_tarihi_parsed = datetime.strptime(giris_tarihi, "%d.%m.%Y")
         except ValueError:
-            show_error("Hata", "Giriş Tarihi GG.AA.YYYY formatında olmalıdır!", parent=modal)
+            show_error(parent=modal, title="Hata", message="Giriş Tarihi GG.AA.YYYY formatında olmalıdır!")
             giris_tarihi_entry.focus()
             return
 
@@ -1083,7 +1083,7 @@ class SakinPanel(BasePanel):
         # Seçilen daireyi al
         selected_daire = daire_combo.get().strip()
         if selected_daire == "Seçiniz...":
-            show_error("Seçim Yapılmadı", "Lütfen bir daire seçin!", parent=modal)
+            show_error(parent=modal, title="Seçim Yapılmadı", message="Lütfen bir daire seçin!")
             daire_combo.focus()
             return
 
@@ -1101,14 +1101,14 @@ class SakinPanel(BasePanel):
             # Split from the right to handle lojman names with spaces
             parts = selected_daire.rsplit(" ", 1)
             if len(parts) != 2:
-                show_error("Hata", "Seçilen daire formatı geçersiz!", parent=modal)
+                show_error(parent=modal, title="Hata", message="Seçilen daire formatı geçersiz!")
                 daire_combo.focus()
                 return
                 
             blok_daire_part = parts[1]  # "A-101"
             blok_daire_parts = blok_daire_part.split("-", 1)  # Max split=1 for daire numbers like "01-A"
             if len(blok_daire_parts) != 2:
-                show_error("Hata", "Seçilen daire formatı geçersiz!", parent=modal)
+                show_error(parent=modal, title="Hata", message="Seçilen daire formatı geçersiz!")
                 daire_combo.focus()
                 return
                 
@@ -1122,7 +1122,7 @@ class SakinPanel(BasePanel):
             )
 
             if not daire:
-                show_error("Bulunamadı", "Seçilen daire bulunamadı!", parent=modal)
+                show_error(parent=modal, title="Bulunamadı", message="Seçilen daire bulunamadı!")
                 daire_combo.focus()
                 return
             
@@ -1150,7 +1150,7 @@ class SakinPanel(BasePanel):
                     "notlar": notlar
                 }
                 self.sakin_controller.update(sakin.id, update_data)
-                show_success("Başarılı", f"Sakin #{sakin.id} başarıyla güncellendi!", parent=modal)
+                show_success(parent=modal, title="Başarılı", message=f"Sakin #{sakin.id} başarıyla güncellendi!")
             else:
                 # Create new sakin
                 create_data = {
@@ -1165,16 +1165,16 @@ class SakinPanel(BasePanel):
                     "notlar": notlar
                 }
                 self.sakin_controller.create(create_data)
-                show_success("Başarılı", "Yeni sakin başarıyla eklendi!", parent=modal)
+                show_success(parent=modal, title="Başarılı", message="Yeni sakin başarıyla eklendi!")
 
         except DuplicateError as e:
-            show_error("Yinelenen Kayıt", str(e.message), parent=modal)
+            show_error(parent=modal, title="Yinelenen Kayıt", message=str(e.message))
             return
         except NotFoundError as e:
-            show_error("Bulunamadı", str(e.message), parent=modal)
+            show_error(parent=modal, title="Bulunamadı", message=str(e.message))
             return
         except DatabaseError as e:
-            show_error("Veritabanı Hatası", str(e.message), parent=modal)
+            show_error(parent=modal, title="Veritabanı Hatası", message=str(e.message))
             return
         except Exception as e:
             handle_exception(e, parent=modal)

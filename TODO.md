@@ -1,587 +1,240 @@
 # Aidat Plus - Geliştirme Planı ve Düzeltme Listesi
 
-**Son Güncelleme**: 29 Kasım 2025  
-**Durum**: ✅ v1.1 Tamamlandı (Error Handling, Logging, Type Hints, Validation)  
-**Durum**: ✅ v1.2 Tamamlandı (Docstring %90+, Utilities Rehberi)  
-**Durum**: ✅ v1.3 Tamamlandı (Configuration Management v1 + Theme Fix)
+**Son Güncelleme**: 2 Aralık 2025  
+**Durum**: ✅ v1.3 Tamamlandı (Configuration Management, Theme Fix)  
+**Hedef**: 🎯 v1.4 Test Otomasyonu ve UI İyileştirmeleri
 
 ---
 
-## 🎯 Öncelikli Görevler (High Priority)
+## 🎯 Öncelikli Görevler (High Priority - v1.4 Hedefleri)
 
-### 0. **Logging UTF-8 Encoding Desteği** ✅ (29 Kasım 2025)
-- [x] Logger'da UTF-8 encoding eklendi
-  - [x] File handler: UTF-8 encoding parameter'ı
-  - [x] Console handler: UTF-8 reconfigure (Windows uyumlu)
-  - [x] Türkçe karakterler desteği (ü, ö, ş, ç, ğ, ı)
-  - [x] Emoji desteği (📊, 🔴, 🟢, 🔵, vb.)
-- [x] Docstring'lere encoding açıklaması eklendi
-- [x] UTILITIES_REHBERI.md'ye UTF-8 bölümü eklendi
-- [x] main.py logging setup iyileştirildi (29 Kasım 2025)
-  - [x] AidatPlusLogger kullanımı (logging.basicConfig yerine)
-  - [x] UTF-8 console handler automatic configuration
-  - [x] Fallback mechanisms for older Python versions
-- [x] logger.py console handler improvements
-  - [x] `stream.reconfigure(encoding='utf-8')` desteği
-  - [x] `TextIOWrapper` fallback alternative
-  - [x] Error handling ve graceful degradation
-- [x] UTF8_ENCODING_FIX.md dokümantasyonu oluşturuldu
+### 6. **Test Otomasyonu ve QA** 🔄 (Sıradaki Ana Hedef)
+*Altyapı (Type hints, Docstrings, Config) hazır olduğu için test yazımı önceliklendirildi.*
+- [ ] **Test Altyapısının Kurulması**
+  - [ ] `pytest` kurulumu ve yapılandırması (`pytest.ini`)
+  - [ ] Test veritabanı (sqlite :memory:) konfigürasyonu
+  - [ ] `tests/conftest.py` (Fixture'ların oluşturulması)
+ - [x] **Test Altyapısının Kurulması**
+ - [x] `pytest` kurulumu ve yapılandırması (`pytest.ini`) (requirements.txt + pytest.ini ekledi)
+ - [x] Test veritabanı (sqlite :memory:) konfigürasyonu (`tests/conftest.py` fixture ile)
+ - [x] `tests/conftest.py` (Fixture'ların oluşturulması)
+- [ ] **Unit Testleri (Birim Testler)**
+  - [ ] **Models**: `models/validation.py` ve Entity modelleri için testler
+  - [ ] **Utils**: `config_manager.py` (load/save senaryoları) ve logger testleri
+  - [ ] **Controllers**:
+    - [ ] `SakinController` (CRUD, aktif/pasif mantığı)
+    - [ ] `AidatController` (Borçlandırma, tahsilat hesaplamaları)
+    - [ ] `FinansController` (Kasa/Banka hareketleri)
+     - [ ] `DaireController` (CRUD, get_bos_daireler/get_dolu_daireler/get_all_with_details)
+     - [ ] `BlokController` (CRUD)
+     - [ ] `LojmanController` (CRUD)
+     - [ ] `HesapController` (create/update/balance/update default)
+     - [ ] `FinansController` (Kasa/Banka hareketleri)
+     - [x] `DaireController` (CRUD, get_bos_daireler/get_dolu_daireler/get_all_with_details) - initial tests added
+     - [x] `BlokController` (CRUD) - initial tests added
+     - [x] `LojmanController` (CRUD) - initial tests added
+     - [x] `HesapController` (create/update/balance/update default) - initial tests added
+     - [x] `FinansController` (Kasa/Banka hareketleri) - initial tests added
+     - [ ] `KategoriYonetimController` (AnaKategori/AltKategori create/update/delete)
+     - [ ] `BelgeController` (dosya ekleme, silme, açma - disk ops)
+    - [x] `BackupController` (backup_to_excel, backup_to_xml, restore_from_excel, restore_from_xml, reset_database)
+     - [ ] `BaseController` common behaviors (create/update/delete error handling)
+     - [ ] `models/validation.py` unit tests for validators
+     - [ ] `ConfigurationManager` (get/set, env overrides, save/load json)
+     - [ ] `database/config.py` (get_db, create_tables, init_database)
+     - [ ] UI smoke tests (panel load + non-GUI helper functions, e.g., `get_sakin_at_date`)
+     - [ ] `raporlar_panel.py` unit tests (if generate_report implemented) / PDF export tests
+   - [x] **Unit Testleri (Birim Testler)**
+   - [x] **Controllers**:
+   - [x] `SakinController` (CRUD, aktif/pasif mantığı) - initial tests added
+   - [x] `AidatController` (AidatIslem: create/get_by_daire) - initial tests added
+  - [x] `FinansController` (Kasa/Banka hareketleri) - tests expanded (transfer, insufficient balance, rollback)
+  - [x] **Finans Bütünlüğü: Atomik Transaction Yönetimi** (v1.4.1)
+    - ✅ `FinansIslemController.create()`: Transaction-level atomic (with_for_update + single commit)
+    - ✅ `FinansIslemController.update_with_balance_adjustment()`: Eski/yeni bakiye reversal atomic
+    - ✅ `FinansIslemController.delete()`: İşlem silme + bakiye reversal atomic
+    - ✅ `HesapController.hesap_bakiye_guncelle()`: Row-level locking + validation
+    - Validasyon aşaması: Pre-check bakiye ve hesap varlığı (transaction başlamadan)
+    - Bakiye pre-kontrolü: Gider/Transfer için yetersiz bakiye check
+    - Atomic: with_for_update() + flush() + single commit
+    - Hata kodları eklendi: VAL_ACC_001, VAL_TRN_001, VAL_TRN_002, DB_TRN_001, DB_BAL_001, DB_DEL_001, DB_UPD_001
+ - [ ] `BaseController` common behaviors (create/update/delete error handling)
+- [ ] **Test Coverage**
+  - [ ] Coverage raporlama aracı entegrasyonu
+  - [ ] Hedef: Kritik modüllerde %70+ kapsam
 
-**Sonuç**: Windows cmd.exe'de UnicodeEncodeError hatası çözüldü. Logger tüm platform'larda (Windows/Linux/macOS) çalışıyor. File logging her zaman UTF-8.
+  ### Test Plan ve Önceliklendirme (Önerilen Sıra)
+  1. Core & Database: `database/config.py`, `ConfigurationManager` — tests + init
+  2. Models & Validators: `models/validation.py`, `models/base.py` properties
+  3. Controllers — Entity CRUD: `Lojman`, `Blok`, `Daire`, `Sakin` (we already tested `Sakin`)
+  4. Controllers — Finance: `Hesap`, `FinansIslem` (balance-keeping, transfer, delete, update)
+  5. Controllers — Aidat: `AidatIslem`, `AidatOdeme` (we added initial aidat tests)
+  6. Controllers — Kategori, Belge, Backup
+  7. UI smoke tests (non-visual): `AidatPanel.get_sakin_at_date`, `RaporlarPanel` basic loading
+  8. Export / PDF: tests for export functions (Excel already covered by backup) and PDF POC
+  9. CI & Automation: GitHub Actions workflow (lint, mypy, pytest, coverage)
 
----
+  Eğer onaylarsanız ben 4. adım (Hesap/Finans) ile devam edeceğim (Fonksiyonel ve kritik finansal logic testleri yüksek önceliklidir).
 
-### 0.5. **Theme ve Arayüz Renk Ayarları Fix** ✅ (29 Kasım 2025)
-- [x] CustomTkinter theme uyumsuzluğu çözülmesi
-  - [x] Dark mode'da siyah başlık sorunu identify
-  - [x] Theme default: "dark" → "light" değiştirildi
-- [x] Configuration'dan theme yüklenmesi
-  - [x] main.py'de theme validation eklendi
-  - [x] Geçersiz theme values fallback
-  - [x] config/app_config.json theme: "light"
-- [x] User preferences'de theme eklendi
-  - [x] config/user_preferences.json theme field
-- [x] THEME_TROUBLESHOOTING.md dokümantasyonu
-  - [x] Problem açıklaması
-  - [x] CustomTkinter theme behavior
-  - [x] Best practices
-  - [x] Testing guide
-  - [x] Common issues & solutions
+  10. Remaining Unit Test Items (Immediate Next):
+   - [ ] Expand `FinansIslemController` tests: insufficient balance, invalid transfer, rollback scenarios, multiple sequential transfers
+   - [ ] Add `BaseController` edge-case tests for create/update/delete error handling and transaction rollback
+   - [ ] Add `BelgeController` negative tests (invalid paths, disk errors, non-existent file removal)
+   - [ ] Add `BackupController` negative tests (restore from corrupt/empty excel or xml)
+   - [ ] Add `BackupController` negative tests (restore from corrupt/empty excel or xml)
+   - [ ] Add CI pipeline (GitHub Actions): lint, mypy, pytest+coverage
+ - [ ] Add CI pipeline (GitHub Actions): lint, mypy, pytest+coverage
 
-**Dosyalar Güncellendi**:
-- ✅ `main.py` (theme validation)
-- ✅ `config/app_config.json` (theme: light)
-- ✅ `config/user_preferences.json` (theme field)
-- ✅ `configuration/config_manager.py` (default: light)
-- ✅ `docs/THEME_TROUBLESHOOTING.md` (yeni)
+### Finance Controller Notes / Follow-ups
+- [x] Fix: `update_with_balance_adjustment` behavior when converting between transaction types (Transfer ↔ Gelir/Gider). **FIXED & TESTED** (v1.4)
+  - **Bug**: When updating a transaction type, old transaction wasn't always reverted before applying new transaction
+  - **Root Cause**: Logic only reverted Transfer when old_tur was Transfer, missing reversals for Gelir/Gider
+  - **Fix**: Unified logic to always revert old transaction (regardless of type) then apply new transaction
+  - **Tests Added**: 3 new comprehensive tests cover all conversion scenarios (Transfer→Gider, Transfer→Gelir, Gider→Transfer)
 
-**Sonuç**: Arayüz renkleri doğru görüntüleniyor, light tema uygulanıyor, Configuration'dan dinamik theme yükleniyor.
-
----
-
-### 1. **Error Handling ve Validation İyileştirilmesi** ✅
-- [x] Tüm controller'larda custom exception sınıfları oluştur
-  - [x] `models/exceptions.py` oluştur (7 exception sınıfı)
-  - [x] `ValidationError`, `DatabaseError`, `FileError`, `ConfigError`, vb.
-  - [x] Ayrıntılı hata mesajları (Türkçe) ve hata kodları
-  - [x] Exception hiyerarşisi (AidatPlusException → Alt sınıflar)
-- [x] Veri doğrulama (validation) sistemi oluştur
-  - [x] `models/validation.py` dosyası (Validator sınıfı)
-  - [x] Metin, sayı, email, telefon, tarih validasyonları
-  - [x] Batch validation desteği (BatchValidator)
-- [x] UI panellerinde input validation (form doğrulama)
-  - [x] Boş alan kontrolü
-  - [x] Veri tipi kontrolü
-  - [x] Uzunluk/format kontrolü
-  - [x] `ui/error_handler.py` oluştur
-- [x] Uygulamada try-except bloklarını standardize et
-  - [x] `controllers/base_controller.py` error handling ile güncelle
-  - [x] Specifik exception tipleri yakala (IntegrityError, SQLAlchemyError)
-  - [x] User-friendly hata mesajları göster (ErrorHandler context manager)
-
-**Dosyalar**: 
-- ✅ `models/exceptions.py` (Tamamlandı)
-- ✅ `models/validation.py` (Tamamlandı)
-- ✅ `ui/error_handler.py` (Tamamlandı)
-- ✅ `controllers/base_controller.py` (Güncellenendi)
-
-**Sonraki Adım**: Tüm controller'lara validasyon eklendi ✅
-
-**Durum**: Validation sistemi controller'lara entegre edildi.
-- [x] Sakin controller'a ad-soyad, telefon, email validasyonu eklendi
-- [x] Aidat controller'a ay-yıl-tutar validasyonu eklendi
-- [x] Finans controller'a tutar, hesap validasyonu eklendi
-- [x] Hesap controller'a ad, tipi, bakiye validasyonu eklendi
-- [x] Blok controller'a ad, kat validasyonu eklendi
-- [x] Daire controller'a daire_no, kat, m2 validasyonu eklendi
-- [x] Lojman controller'a ad, lokasyon validasyonu eklendi
-
-**Eklenen Geliştirmeler**:
-- Tüm controller'larda improved docstring'ler (Google style)
-- create() ve update() metodlarında input validasyonu
-- Domain-spesifik doğrulamalar (pozitif tutar, seçenek kontrolü, telefon/email formatı, vb.)
-- ValidationError exception handling
-
-**UI Error Handler Entegrasyonu** ✅ (28 Kasım 2025)
-- [x] `sakin_panel.py`: ErrorHandler ve custom exception handling ekle
-  - [x] Import: `ui.error_handler` ve `models.exceptions`
-  - [x] `load_aktif_sakinler()`: DatabaseError handling
-  - [x] `load_pasif_sakinler()`: DatabaseError handling
-  - [x] `confirm_pasif_yap()`: NotFoundError, DatabaseError handling
-  - [x] `save_sakin()`: ErrorHandler context manager + ValidationError raise
-  - [x] `save_aktif_yap_sakin()`: ErrorHandler context manager + ValidationError raise
-- [x] `aidat_panel.py`: ErrorHandler ve custom exception handling ekle (import)
-- [x] `finans_panel.py`: ErrorHandler ve custom exception handling ekle (import)
-- [x] `lojman_panel.py`: ErrorHandler ve custom exception handling ekle (import)
-- [x] `dashboard_panel.py`: ErrorHandler ve custom exception handling ekle (import)
-- [x] `ayarlar_panel.py`: ErrorHandler ve custom exception handling ekle (import)
-- [x] `raporlar_panel.py`: ErrorHandler ve custom exception handling ekle (import)
-
-**Pattern**: 
-```python
-from ui.error_handler import ErrorHandler, handle_exception, show_error, show_success
-from models.exceptions import ValidationError, DatabaseError, NotFoundError
-
-# Try-catch kullanımı
-try:
-    # Validasyon
-    if not value:
-        raise ValidationError("Hata mesajı", code="VAL_001")
-    # İşlem
-except NotFoundError as e:
-    show_error("Bulunamadı", str(e.message), parent=self.frame)
-except DatabaseError as e:
-    show_error("Veritabanı Hatası", str(e.message), parent=self.frame)
-
-# ErrorHandler context manager kullanımı
-with ErrorHandler(parent=modal, show_success_msg=False):
-    if not data:
-        raise ValidationError("Eksik veri", code="VAL_001")
-    # İşlemler
-    show_success("Başarılı", "İşlem tamamlandı", parent=modal)
-```
+### 7. **UI/UX ve Responsive İyileştirmeleri** (Orta-Yüksek Öncelik)
+- [ ] **Pencere Yönetimi**
+  - [ ] Ana pencere ve modalların ekran boyutuna göre dinamik boyutlanması
+  - [ ] Scrollable frame'lerin içerik dolduğunda doğru davranması
+- [ ] **Kullanıcı Geri Bildirimleri (Feedback)**
+  - [ ] İşlem sonrası "Toast" mesajları veya durum çubuğu bilgilendirmeleri (Success/Error dışında info mesajları)
+  - [ ] Uzun işlemlerde (Raporlar, Yedekleme) "Loading/Spinner" göstergesi
 
 ---
 
-### 2. **Logging Sistemi Kurulması** ✅
-- [x] `utils/logger.py` oluştur
-  - [x] Python logging modülü kullan
-  - [x] File ve console output
-  - [x] Log seviyeleri: DEBUG, INFO, WARNING, ERROR, CRITICAL
-- [x] Tüm controller'larda logging ekle
-  - [x] CRUD operasyonları
-  - [x] İş mantığı işlemleri
-  - [x] Hata durumları
-- [x] Log dosyasını `logs/` dizinine yaz
-  - [x] Tarih formatında: `aidat_plus_YYYY-MM-DD.log`
-  - [x] Haftada bir log rotation
+## ✅ Tamamlananlar (Completed v1.1 - v1.3)
 
-**Dosyalar**: `utils/logger.py`, `logs/` dizini
+### 5. **Configuration Management** ✅ (29 Kasım 2025 - v1.3)
+- [x] Merkezi `ConfigurationManager` sınıfı ve Singleton yapısı
+- [x] 5 katmanlı konfigürasyon (Hardcoded -> System -> User -> Env -> Runtime)
+- [x] JSON (`app_config.json`, `user_preferences.json`) ve `.env` desteği
+- [x] Theme persistence (Light/Dark mod kaydı)
+- [x] İlgili Dokümantasyon: `CONFIGURATION_MANAGEMENT.md`
 
----
+### 4. **Docstring ve Dokümantasyon** ✅ (v1.2)
+- [x] Tüm UI Panelleri (%100 Coverage)
+- [x] Utilities ve Controllers (%90+ Coverage)
+- [x] Google Style Docstring standardı
+- [x] `DOCSTRING_REHBERI.md` ve `UTILITIES_REHBERI.md`
 
-### 3. **Diğer Panellerin save Metodlarını ErrorHandler ile Güncelle** ✅ (28 Kasım 2025)
+### 3. **Type Hints ve Code Quality** ✅
+- [x] %100 Type Hint coverage (33/33 dosya)
+- [x] `mypy` entegrasyonu ve strict mode uyumluluğu
 
-**Güncellenen Paneller:**
-- [x] `aidat_panel.py` - `save_aidat_islem()` metodunun ErrorHandler'a uyarlanması
-  - [x] ValidationError raise (daire, yıl, ay, tutar, tarih kontrolleri)
-  - [x] NotFoundError raise (daire bulunamadı)
-  - [x] ErrorHandler context manager kullanımı
-  - [x] show_success() ile başarı mesajı
-  
-- [x] `finans_panel.py` - `save_islem()` metodunun ErrorHandler'a uyarlanması
-  - [x] ValidationError raise (tarih, tutar, hesap, kategori kontrolleri)
-  - [x] BusinessLogicError raise (para birimi uyuşmazlığı)
-  - [x] ErrorHandler context manager kullanımı
-  - [x] show_success() ile başarı mesajı
+### 2. **Logging Sistemi** ✅
+- [x] UTF-8 destekli File ve Console logging
+- [x] `AidatPlusLogger` sınıfı
+- [x] Rotation mekanizması
 
-**Tamamlananlar:**
-- [x] `lojman_panel.py` - Save metodlarını güncelle
-  - [x] `add_lojman()` metodunda ErrorHandler context manager kullanımı
-  - [x] `add_blok()` metodunda ErrorHandler context manager kullanımı
-  - [x] `add_daire()` metodunda ErrorHandler context manager kullanımı
-  - [x] `show_edit_lojman_modal()` içerisinde save_lojman() fonksiyonunda ErrorHandler kullanımı
-  - [x] `show_edit_blok_modal()` içerisinde save_blok() fonksiyonunda ErrorHandler kullanımı
-  - [x] `show_edit_daire_modal()` içerisinde save_daire() fonksiyonunda ErrorHandler kullanımı
-- [x] `ayarlar_panel.py` - Save metodlarını güncelle
-  - [x] `save_kategori()` metodunda ErrorHandler context manager kullanımı
-  - [x] `duzenle_kategori()` metodunda ErrorHandler kullanımı
-  - [x] `sil_kategori()` metodunda try-except blokları
-  - [x] `yedek_al()` metodunda try-except blokları
-  - [x] `yedekten_yukle()` metodunda try-except blokları
-  - [x] `sifirla_veritabani()` metodunda try-except blokları
+### 1. **Error Handling ve Validation** ✅ (v1.1)
+- [x] Custom Exception sınıfları (`AidatPlusException`)
+- [x] Merkezi Validation modülü
+- [x] UI tarafında `ErrorHandler` context manager kullanımı
+- [x] Sakin silme/pasif yapma mantığı düzeltmeleri (Soft Delete)
 
-✅ **TÜM PANELLERİN SAVE METODLARI ERRORHANDLER İLE GÜNCELLENDİ**
-
----
-
-### 3. **Type Hints Standardizasyonu** ✅
-- [x] Tüm controller metodlarına type hints ekle
-   - [x] Parametre tipleri (str, int, List, Optional, Dict, etc.)
-   - [x] Return type'ları (T, Optional[T], List[T])
-   - [x] Generic types (TypeVar, Generic[T])
-   - [x] SQLAlchemy tipleri (Session, Query[T])
-- [x] Tüm model alanlarında type hints
-   - [x] BaseController generic type desteği
-   - [x] Property return types
-   - [x] Relationship hints
-- [x] UI layer type hints
-   - [x] base_panel.py type hints
-   - [x] error_handler.py type hints
-   - [x] Callable ve Any tipleri
-- [x] mypy ile type checking yapılandırması
-   - [x] mypy.ini konfigürasyon
-   - [x] Strict mode settings
-   - [x] 33 Python dosyasının tamamında type hints
-
-**Dosyalar**: `controllers/` (15 dosya), `models/base.py`, `ui/` (9 dosya), `mypy.ini`
-
-**Durum**: ✅ %100 Type Hints Coverage (33/33 dosya)
-
----
-
-### 4. **Docstring Eklemeleri** ✅ (v1.2 - Tamamlandı)
-- [x] BaseController sınıfı - Tam docstring
-- [x] Entity controllers (sakin, aidat, finans) - Tam docstring
-- [x] Models (base.py) - Temel docstring
-- [x] UI error_handler - Tam docstring
-- [x] base_panel.py - Kısmi docstring
-- [x] Tüm UI panelleri - Full docstring (raporlar, lojman, ayarlar, vb.)
-  - [x] dashboard_panel.py - %100 docstring coverage (Sınıf + 15+ metodlar)
-  - [x] lojman_panel.py - %100 docstring coverage (Sınıf + scroll_to_widget)
-  - [x] aidat_panel.py - %100 docstring coverage (Sınıf + get_sakin_at_date)
-  - [x] sakin_panel.py - %100 docstring coverage (Sınıf + _normalize_param)
-  - [x] finans_panel.py - %100 docstring coverage (Sınıf)
-  - [x] raporlar_panel.py - %100 docstring coverage (Sınıf)
-  - [x] ayarlar_panel.py - %100 docstring coverage (Sınıf)
-- [x] Tüm utility fonksiyonları - Docstring tamamlama ✅ (29 Kasım 2025)
-- [x] Property docstring'leri - Tamamlama ✅ (29 Kasım 2025)
-
-**Durum**: 
-- ✅ Controllers ve Models: %90+ docstring coverage
-- ✅ UI Panelleri: %100 docstring coverage (Tamamlandı)
-- ✅ Utilities: %100 docstring coverage (Tamamlandı)
-
-**Oluşturulan Dosyalar**:
-- `docs/DOCSTRING_REHBERI.md` - Google Style docstring standardı ve rehberi (Türkçe)
-- `docs/UTILITIES_REHBERI.md` - Logger sistemi ve utility fonksiyonları rehberi (Türkçe)
-
-**Dosyalar**: `controllers/` (15 dosya), `ui/` (9 dosya - ✅ tamamlandı), `models/`, `utils/` (✅ tamamlandı)
+### Yapılanlar - Uygulama Özeti
+- [x] Temel CRUD ve iş mantığı (controllers): `Sakin`, `Daire`, `AidatIslem`, `AidatOdeme`, `FinansIslem`, `Hesap`, `Kategori`, `Backup`, `Belge`.
+- [x] UI panelleri: `Dashboard`, `Finans`, `Aidat`, `Sakin`, `Lojman`, `Raporlar`, `Ayarlar` — temel fonksiyonlar, filtreleme ve tablolar uygulanmış.
+- [x] Backup: Excel / XML yedekleme ve geri yükleme çalışır (`backup_controller.py`).
+ - [x] Backup: Excel / XML yedekleme ve geri yükleme çalışır (`backup_controller.py`).
+ - [x] BackupController: Unit tests added covering Excel/XML backup and restore, reset_database, and backup_database_file.
+- [x] Dosya yönetimi: `BelgeController` ile belge upload/sil/aç fonksiyonları uygulanmış.
+- [x] Validasyon, logging ve docstring temelleri tamamlandı.
 
 ---
 
 ## 📋 Orta Öncelikli Görevler (Medium Priority)
 
-### 5. **Configuration Management** ✅ (29 Kasım 2025)
-- [x] `configuration/config_manager.py` oluştur (900+ satır)
-  - [x] Merkezi ConfigurationManager sınıfı (Singleton)
-  - [x] 5-tier override hierarchy
-  - [x] Nested key support
-  - [x] Type conversion
-- [x] `configuration/constants.py` oluştur (300+ satır)
-  - [x] 50+ ConfigKeys constant
-  - [x] ConfigDefaults
-  - [x] EnvironmentTypes, LogLevels, ThemeTypes enums
-- [x] `config/` dizini ve JSON dosyaları
-  - [x] `app_config.json` - Uygulama ayarları
-  - [x] `user_preferences.json` - Kullanıcı tercihleri
-- [x] Environment variable desteği (.env dosyası)
-  - [x] `.env.example` template oluştur
-  - [x] Load dotenv integration
-  - [x] String → bool/int/float parsing
-- [x] JSON config dosyası desteği
-  - [x] JSON okuma/yazma
-  - [x] Automatic merge
-- [x] main.py entegrasyonu
-  - [x] ConfigurationManager başlatma
-  - [x] Logging setup
-  - [x] UI theme setup
-- [x] Kapsamlı dokümantasyon
-  - [x] `CONFIGURATION_MANAGEMENT.md` (700+ satır)
-  - [x] `CONFIGURATION_IMPLEMENTATION.md` (400+ satır)
-  - [x] `CONFIGURATION_SETUP_SUMMARY.md` (özet)
+### 8. **Performans Optimizasyonu**
+- [ ] **Veritabanı İndeksleri**
+  - [ ] `sakinler` tablosunda isim ve daire aramaları için index
+  - [ ] `aidat_islemleri` tablosunda tarih ve daire_id indexleri
+- [ ] **Lazy Loading**
+  - [ ] Sakin listesi ve Hareket tablosunda "Load More" veya Pagination yapısı (Şu an tüm veriyi çekiyor olabilir)
 
-**Dosyalar**: 
-- ✅ `configuration/config_manager.py` (900+ satır)
-- ✅ `configuration/constants.py` (300+ satır)
-- ✅ `configuration/__init__.py`
-- ✅ `config/app_config.json`
-- ✅ `config/user_preferences.json`
-- ✅ `.env.example`
-- ✅ `main.py` (güncellenmiş)
-- ✅ Dokümantasyon (1100+ satır)
+### 9. **Raporlama Çeşitliliği**
+- [ ] PDF Dışa Aktarım (ReportLab veya FPDF entegrasyonu)
+- [ ] Grafiksel Raporlar (Matplotlib/Tkinter entegrasyonu ile dashboard grafikleri)
 
-**Durum**: ✅ Configuration Management v1.0 Tamamlandı
+### Yapılacaklar (Audit Findings — Eksik / Önerilen)
+- [ ] `pytest` ve temel test altyapısı: `tests/`, `pytest.ini`, `tests/conftest.py` — kritik (henüz yok).
+- [ ] CI pipeline (GitHub Actions) — lint, mypy, pytest entegrasyonu.
+- [ ] PDF export ve `raporlar_panel.py -> generate_report()` implementasyonu (ReportLab/FPDF/WeasyPrint POC).
+- [ ] `ConfigurationManager._load_database_configs()` — DB kaynaklı konfigürasyon yükleme (implementasyon eksik).
+- [ ] Performans: Daire/İşlem listelerinde pagination/virtualization, ve DB indeksleri eklenmeli.
+- [ ] UI: Uzun işlemler (yedekleme, raporlar) için spinner/loading, işlem durum uyarıları (toast) eklenmeli.
+- [ ] Kod temizliği: UI dosyalarındaki `pass` placeholder'larını inceleyip tamamlamak (gerekirse event handlerları implement etmek).
 
 ---
-
-### 6. **Veri Analitik ve Raporlar**
-- [ ] Dashboard istatistiklerini geliştir
-  - [ ] Aydan aya karşılaştırma
-  - [ ] Kategori dağılım grafiği
-  - [ ] Ödenmiş/Ödenmemiş aidat oranı
-- [ ] Raporlar modülü genişlet
-  - [ ] PDF export
-  - [ ] Tarih aralığı filtresi
-  - [ ] Ayrıntılı finansal analizler
-  - [ ] Boş konut maliyet analizi
-
-**Dosyalar**: `ui/dashboard_panel.py`, `ui/raporlar_panel.py`, `controllers/`
-
----
-
-### 7. **Kategori Yönetimi İyileştirilmesi**
-- [ ] JSON kategoriler.json yapısını optimize et
-  - [ ] Şema validasyonu
-  - [ ] Hiyerarşik struktur desteği
-  - [ ] Default kategorileri tanımla
-- [ ] Kategori yönetim UI iyileştir
-  - [ ] Drag-drop kategorileri sıralama
-  - [ ] Renkli kategori simgeleri
-  - [ ] Alt kategori yönetimi
-- [ ] Kategori import/export özelliği
-
-**Dosyalar**: `controllers/kategori_yonetim_controller.py`, `ui/ayarlar_panel.py`
-
----
-
-### 8. **Finansal İşlemler Modülü Genişletmesi**
-- [ ] Bütçe planlama özelliği
-  - [ ] Kategori başına bütçe belirleme
-  - [ ] Bütçe vs. gerçek karşılaştırması
-  - [ ] Uyarılar (bütçeyi aşan harcamalar)
-- [ ] Tekrarlı işlemleri otomatikleştir
-  - [ ] Sabit giderler (aidat, elektrik, su)
-  - [ ] Aylık/yıllık tekrar ayarı
-  - [ ] Otomatik kayıt
-- [ ] Transfer işlemleri iyileştir
-  - [ ] Hesaplar arası transfer
-  - [ ] Transfer geçmiş takibi
-
-**Dosyalar**: `controllers/finans_islem_controller.py`, `ui/finans_panel.py`
-
----
-
-### 9. **Backup ve Veri Güvenliği**
-- [ ] Otomatik yedekleme
-  - [ ] Günlük/haftalık/aylık yedekleme
-  - [ ] Eski yedekleme temizleme
-  - [ ] Cloud desteği (opsiyonel)
-- [ ] Veri şifreleme
-   - [ ] Hassas bilgileri şifrele (telefon, email)
-  - [ ] Backup dosyalarını şifrele
-- [ ] Veri bütünlüğü kontrolleri
-  - [ ] Checksum doğrulama
-  - [ ] Referans bütünlüğü
-
-**Dosyalar**: `controllers/backup_controller.py`, `utils/encryption.py`
+## 🛠️ Kısa Dönem (v1.4) Action Items — Öneri (Hızlı kazanımlar)
+1. `pytest` scaffold: fixtures + test db (sqlite memory) + 5 kritik controller testleri (Sakin, AidatIslem, FinansIslem, Hesap, Backup).
+2. Basit GitHub Actions Workflow ekle (lint -> mypy -> pytest).
+3. POC: `raporlar_panel.py` için PDF export (örnek: bir tabloyu PDF olarak kaydetme).
+4. Implement `ConfigurationManager._load_database_configs()` (opsiyonel — runtime yönetim).
+5. Ek indeksler ve frontend pagination ile performans iyileştirmeleri.
 
 ---
 
 ## 🔧 Düşük Öncelikli Görevler (Low Priority)
 
-### 10. **UI/UX İyileştirmeleri**
-- [ ] Theme desteği
-  - [ ] Dark mode
-  - [ ] Light mode
-  - [ ] Tema tercihi kaydet
-- [ ] Responsive tasarım
-  - [ ] Farklı ekran boyutlarına adapte
-  - [ ] Pencereleri yeniden boyutlandırabilir
-- [ ] İnternationalization (i18n)
-  - [ ] Multi-language desteği
-  - [ ] İngilizce çeviri
-  - [ ] Diğer diller
+### 10. **Documentation ve Training**
+- [ ] Kullanıcı kılavuzu (Son kullanıcı için PDF)
+- [ ] Geliştirici API dokümantasyonu (Sphinx kurulumu düşünülebilir)
 
-**Dosyalar**: `ui/`, `config/themes/`, `config/languages/`
+### 11. **Gelecek Özellikler (Feature Backlog)**
+- [ ] Çoklu kullanıcı desteği (Login ekranı)
+- [ ] Bulut yedekleme (Google Drive / AWS S3)
 
 ---
 
-### 11. **Performans Optimizasyonu**
-- [ ] Veritabanı indeksleri
-  - [ ] Sık kullanılan sütunlara index
-  - [ ] Join performansı
-- [ ] Lazy loading
-  - [ ] Büyük listeler için pagination
-  - [ ] Dinamik veri yükleme
-- [ ] Caching mekanizması
-  - [ ] Sık kullanılan veriler
-  - [ ] Kategoriler cache'i
-
-**Dosyalar**: `models/base.py`, `controllers/`, `ui/`
-
----
-
-### 12. **Test ve QA**
-- [ ] Unit testleri yazma
-  - [ ] Controller testleri
-  - [ ] Model testleri
-  - [ ] Validasyon testleri
-- [ ] Integration testleri
-  - [ ] Database işlemleri
-  - [ ] UI etkileşimleri
-- [ ] Test coverage hedefi: %70+
-
-**Dosyalar**: `tests/`, `test_*.py` dosyaları
-
----
-
-### 13. **Documentation ve Training**
-- [ ] Kullanıcı kılavuzu oluştur
-  - [ ] Video tutorial'ler
-  - [ ] İşlem adım adım rehberi
-  - [ ] Sıkça sorulan sorular
-- [ ] Developer documentation
-  - [ ] API dokümantasyonu
-  - [ ] Katkılama rehberi
-  - [ ] Proje kurulum
-- [ ] Changelog ve Release notes
-
-**Dosyalar**: `docs/`, `KILAVUZLAR.md`, `SORULAR_CEVAPLAR.md`
-
----
-
-## 🐛 Bilinen Sorunlar
-
-### Kritik Sorunlar
-- [ ] Sorun 1: Açıklama ve çözüm planı
-- [ ] Sorun 2: Açıklama ve çözüm planı
+## 🐛 Bilinen Sorunlar ve Takip Listesi
 
 ### Bildirilen Hatalar
-- [ ] Hata 1: Açıklama
-  - **Nedeni**: ?
-  - **Çözüm**: ?
-  - **Durum**: Açık
+- *Şu an için açık kritik hata bulunmamaktadır.*
+
+### Çözülen Kritik Sorunlar (Arşiv)
+- [x] **Theme Sorunu:** Dark mode başlık görünmezliği çözüldü (v1.3)
+- [x] **Encoding Sorunu:** Windows CMD Unicode hatası çözüldü (v1.1)
+- [x] **Sakin Silme:** Veri kaybı önlendi, pasif/aktif mantığı ayrıştırıldı (v1.1)
 
 ---
 
 ## 📊 Proje İstatistikleri
 
-### Kod Metrikleri
-
-| Metrik | Mevcut | Hedef | Durum |
-|--------|--------|-------|-------|
+| Metrik | Mevcut | Hedef (v1.4) | Durum |
+|--------|--------|--------------|-------|
 | **Python Dosyaları** | 33 | 40+ | ✅ |
-| **Satır Kodu** | ~7000+ | 7000+ | ✅ |
-| **Type Hints Yüzdesi** | %100 | %90+ | ✅ Tamamlandı |
-| **Docstring Yüzdesi** | %90+ | %85+ | ✅ Tamamlandı |
-| **Logging Sistemi** | %95 | %100 | ✅ Tamamlandı |
-| **Exception Handling** | %100 | %100 | ✅ Tamamlandı |
-| **Test Coverage** | 0% | %70+ | 🔴 Başlanmadı |
-
-**Docstring Coverage Detay**:
-- **Controllers**: 15/15 dosya ✅ (%100)
-- **UI Panelleri**: 7/7 dosya ✅ (%100)
-- **Utilities**: 2/2 dosya ✅ (%100)
-- **Models**: base.py, exceptions.py, validation.py ✅ (%100)
-- **Helper Utilities**: base_panel.py, error_handler.py, backup_controller.py, main.py ✅ (%100)
-- **Proje Geneli**: %92+
-
-### Modül Completeness
-
-| Modül | Durum | Completeness |
-|------|-------|-------------|
-| **Database** | ✅ Tamamlandı | 95% |
-| **Models** | ✅ Tamamlandı | 90% |
-| **Controllers** | ✅ Tamamlandı | 95% |
-| **UI** | ✅ Tamamlandı | 95% |
-| **Testing** | 🔴 Başlanmadı | 0% |
-| **Documentation** | 🟡 Gelişiyor | 60% |
-
----
-
-## 🔧 Bug Fixes ve Düzeltmeler
-
-### Sakin Arşiv Yönetimi Bug Fix ✅ (29 Kasım 2025)
-- [x] **Sorun**: Arşiv sekmesindeki sakini aktif ederken arşiv kaydı siliniyordu
-- [x] **Çözüm**: Arşiv kaydını koruyarak yeni aktif sakin oluşturmak
-  - Eski davranış: `aktif_yap()` + `update()` - sakini güncelle (sil ve yenile)
-  - Yeni davranış: `create()` - yeni sakin kaydı oluştur, eski arşiv kaydı korunur
-- [x] **Metod**: `ui/sakin_panel.py` - `confirm_aktif_yap()` (satır 804-860)
-- [x] **Etki**: Raporlamada giriş/çıkış tarihlerine göre hesap yapılmadığında tutarlılık sağlanır
-- [x] **Teknik Düzeltme**: 
-  - `confirm_aktif_yap()`: `create(dict)` (kwargs değil) olarak çağır
-  - `SakinController.create()`: String ve datetime object tarihleri accept et
-  - Docstring: Parameter tipleri datetime object desteğine güncelle
-
-**Dokümantasyon**: `docs/SAKIN_ARSIV_FIX.md` (İşlem akışı, senaryo, teknik detaylar)
-
----
-
-### Sakin Silme Mantığı Düzeltme ✅ (29 Kasım 2025 - v1.3)
-- [x] **Sorun**: Sakin silinirken `cikis_tarihi` üzerine yazılıyor, tarih verisi kayboluyor
-- [x] **Çözüm**: Soft delete prensibi - tarihi veriler her zaman korunmalı
-  - **Aktif sekmesinden "Sil"**: `pasif_yap()` çağır (çıkış tarihi sor, arşive taşı)
-  - **Pasif sekmesinden "Sil"**: `delete()` çağır (sadece gözardı et, tarihi koru)
-- [x] **Metod Değişikliği**: 
-  - `controllers/sakin_controller.py` - `delete()` metodu (tarihi koruma ile)
-  - `ui/sakin_panel.py` - `sil_sakin()` metodu (sekmeye göre farklı davranış)
-- [x] **Etki**: 
-  - Raporlamada "2024'te çıkmış, 2025'te geldi" analizi tutarlı
-  - Denetim izi korunur
-  - Aynı tarihte başka sakin eklenebilir
-- [x] **Teknik Detay**:
-  - `delete()`: `aktif=False` (cikis_tarihi korunur)
-  - `pasif_yap()`: `cikis_tarihi=now()` + `daire_id=NULL`
-  - Database soft delete prensibi
-
-**Dokümantasyon**: `docs/SAKIN_SILME_MANTIGI_DUZELTME.md` (Senaryo, iş akışı, test kareleri)
+| **Type Hints** | %100 | %100 | ✅ |
+| **Docstring** | %92+ | %95+ | ✅ |
+| **Test Coverage** | **0%** | **%60+** | 🔴 Kritik Hedef |
+| **Konfigürasyon** | %100 | %100 | ✅ |
 
 ---
 
 ## 🚀 Roadmap (Sürüm Planı)
 
-### v1.0 (Mevcut - Stable)
-- ✅ Temel CRUD operasyonları
-- ✅ Finansal işlemler
-- ✅ Raporlar
-- ✅ Backup/Restore
+### v1.0 - v1.3 (Tamamlandı) ✅
+- Temel CRUD, Finans, Raporlar
+- Error Handling, Logging, Validation
+- Type Hints, Docstrings
+- Configuration Management & Theme Fix
 
-### v1.1 (Tamamlandı - 29 Kasım 2025)
-- ✅ Gelişmiş error handling (Custom exceptions, ErrorHandler context manager)
-- ✅ Logging sistemi (Python logging, file + console output)
-- ✅ Type hints standardizasyonu (%100 coverage - 33/33 dosya)
-- ✅ Docstring tamamlama (Controllers & Models %90+, UI %50+)
-- ✅ Validation sistemi (Form validation, domain-specific checks)
-- ✅ UI Error Handler entegrasyonu (Tüm panellerde)
+### v1.4 (Planlanan - Aralık 2025) 🚧
+- **Odak:** Kalite, Stabilite ve Testler
+- Unit & Integration Testleri
+- UI Responsive İyileştirmeleri
+- Performans optimizasyonları (Indexleme)
 
-### v1.2 (Tamamlandı - 29 Kasım 2025)
-- ✅ **Docstring Eklemeleri** (UI Panelleri %100 coverage + Utilities %100)
-  - ✅ Tüm 7 UI paneli sınıflarına docstring
-  - ✅ 15+ metodlar detaylı docstring ile
-  - ✅ Google Style docstring rehberi (Türkçe) - `docs/DOCSTRING_REHBERI.md`
-  - ✅ Utilities docstring tamamlandı - `docs/UTILITIES_REHBERI.md`
-  - ✅ Proje geneli docstring coverage %90+
-  - ✅ Controllers, UI Panelleri, Utilities tamamlandı
-  - ✅ Models %90+, Property docstring'leri eklendi
-
-### v1.3+ (Gelecek)
-- Cloud backup
+### v2.0 (Gelecek)
 - Multi-user support
-- API desteği
-- Mobile app
-
----
-
-## 📚 Teknik Dokümantasyon
-
-### v1.2 Ek Dokümantasyon
-- **`docs/SAKIN_SILME_VS_PASIF_YAPMA.md`** - Sakin silme işleminin teknik detayları (YENİ)
-  - "Silme" aslında pasif yapma (aktif=FALSE)
-  - Giriş/çıkış tarihleri korunması
-  - Veritabanında ID benzersizliği
-  - Mali hesaplamalar ve denetim izi
-
----
-
-## 📞 İlişkili Dosyalar
-
-- **PROJE_YAPISI.md**: Proje mimarisi
-- **AGENTS.md**: Stil rehberi ve komutlar
-- **KILAVUZLAR.md**: Özellik kılavuzları
-- **SORULAR_CEVAPLAR.md**: FAQ ve sorun giderme
-- **SAKIN_SILME_VS_PASIF_YAPMA.md**: Sakin yönetimi teknik açıklaması
+- Cloud backup
+- Modern Dashboard Grafikleri
 
 ---
 
 ## 👨‍💻 Geliştirici Notları
 
-### Çalışırken İzlenecek Adımlar
-
-1. Yeni bir özellik eklemeden önce bu TODO dosyasını kontrol et
-2. Görev başlığında bir TODO oluştur
-3. Branch oluştur: `feature/[görev-adı]`
-4. Değişiklikleri commit et ve PR oluştur
-5. Code review sonrası TODO'yu güncelle
-
-### Code Review Kontrol Listesi
-
-- [ ] Type hints var mı?
-- [ ] Docstring var mı?
-- [ ] Error handling uygun mu?
-- [ ] Test yazıldı mı?
-- [ ] AGENTS.md stil kurallarına uyuyor mu?
-
----
-
-**Not**: Bu dosya düzenli olarak güncellenecektir. Son güncelleme tarihi yukarıda verilmiştir.
+### v1.4 İçin Çalışma Prensibi
+1. Önce test yaz (`tests/` klasöründe), sonra refactor et.
+2. `config_manager`'ı tüm yeni modüllerde dependency injection ile kullan.
+3. UI değişikliklerinde `customtkinter` theme uyumluluğunu (Light/Dark) her zaman kontrol et.

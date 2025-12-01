@@ -581,25 +581,25 @@ class AyarlarPanel(BasePanel):
                         kategori_turu = "Gelir" if gelir_gider == "gelir" else "Gider"
                         msg = f"Ana kategori '{name}' ({kategori_turu}) başarıyla {action}!"
                         modal.destroy()
-                        show_success("Başarılı", msg, parent=self.parent)
+                        show_success(parent=self.parent, title="Başarılı", message=msg)
                         self.load_data()
                     else:
                         if action == "eklendi":
-                            show_error("Hata", "Bu isimde bir ana kategori zaten mevcut!", parent=modal)
+                            show_error(parent=modal, title="Hata", message="Bu isimde bir ana kategori zaten mevcut!")
                         else:
-                            show_error("Hata", "Kategori güncellenirken hata oluştu!", parent=modal)
+                            show_error(parent=modal, title="Hata", message="Kategori güncellenirken hata oluştu!")
             else:
                 # Alt kategori ekle/güncelle
                 selected_ana = self.ana_kategori_combo.get()
                 if not selected_ana:
-                    show_error("Hata", "Lütfen bir ana kategori seçin!", parent=modal)
+                    show_error(parent=modal, title="Hata", message="Lütfen bir ana kategori seçin!")
                     return
 
                 # ID'yi seçilen metinden çıkar
                 try:
                     parent_id = int(selected_ana.split("(ID: ")[1].split(")")[0])
                 except (IndexError, ValueError):
-                    show_error("Hata", "Geçersiz ana kategori seçimi!", parent=modal)
+                    show_error(parent=modal, title="Hata", message="Geçersiz ana kategori seçimi!")
                     return
 
                 with ErrorHandler(parent=modal, show_success_msg=False):
@@ -618,13 +618,13 @@ class AyarlarPanel(BasePanel):
                     if success:
                         msg = f"Alt kategori '{name}' başarıyla {action}!"
                         modal.destroy()
-                        show_success("Başarılı", msg, parent=self.parent)
+                        show_success(parent=self.parent, title="Başarılı", message=msg)
                         self.load_data()
                     else:
                         if action == "eklendi":
-                            show_error("Hata", "Bu isimde bir alt kategori zaten mevcut!", parent=modal)
+                            show_error(parent=modal, title="Hata", message="Bu isimde bir alt kategori zaten mevcut!")
                         else:
-                            show_error("Hata", "Kategori güncellenirken hata oluştu!", parent=modal)
+                            show_error(parent=modal, title="Hata", message="Kategori güncellenirken hata oluştu!")
 
         except (ValidationError, ConfigError) as e:
             handle_exception(e, parent=modal)
