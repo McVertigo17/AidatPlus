@@ -189,14 +189,14 @@ class RaporlarPanel(BasePanel):
         self.islem_tree.heading("tur", text="Tür")
 
         # Kolon genişlikleri (kompakt)
-        self.islem_tree.column("id", width=35, anchor="center")
-        self.islem_tree.column("tarih", width=80, anchor="center")
-        self.islem_tree.column("aciklama", width=120, anchor="center")
+        self.islem_tree.column("id", width=20, anchor="center")
+        self.islem_tree.column("tarih", width=30, anchor="center")
+        self.islem_tree.column("aciklama", width=220, anchor="center")
         self.islem_tree.column("ana_kategori", width=80, anchor="center")
         self.islem_tree.column("alt_kategori", width=80, anchor="center")
-        self.islem_tree.column("hesap", width=100, anchor="center")
-        self.islem_tree.column("tutar", width=80, anchor="center")
-        self.islem_tree.column("tur", width=60, anchor="center")
+        self.islem_tree.column("hesap", width=50, anchor="center")
+        self.islem_tree.column("tutar", width=30, anchor="center")
+        self.islem_tree.column("tur", width=30, anchor="center")
 
         # Scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.islem_tree.yview)
@@ -399,12 +399,12 @@ class RaporlarPanel(BasePanel):
         self.icmal_tree.heading("tutar_toplami", text="Tutar Toplamı")
         
         # Kolon genişlikleri
-        self.icmal_tree.column("sira_no", width=50, anchor="center")
+        self.icmal_tree.column("sira_no", width=30, anchor="center")
         self.icmal_tree.column("gider_turu", width=120, anchor="center")
         self.icmal_tree.column("gider_turu_ayrinti", width=150, anchor="center")
-        self.icmal_tree.column("tutar", width=80, anchor="center")
-        self.icmal_tree.column("aciklama", width=200, anchor="center")
-        self.icmal_tree.column("tutar_toplami", width=100, anchor="center")
+        self.icmal_tree.column("tutar", width=50, anchor="center")
+        self.icmal_tree.column("aciklama", width=300, anchor="center")
+        self.icmal_tree.column("tutar_toplami", width=50, anchor="center")
         
         # Scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.icmal_tree.yview)
@@ -1084,14 +1084,14 @@ class RaporlarPanel(BasePanel):
         self.bos_konut_tree.heading("konut_aidat_bedeli", text="Konut Aidat Bedeli")
 
         # Kolon genişlikleri
-        self.bos_konut_tree.column("sira_no", width=60, anchor="center")
-        self.bos_konut_tree.column("daire_adi", width=120, anchor="center")
-        self.bos_konut_tree.column("daire_no", width=70, anchor="center")
-        self.bos_konut_tree.column("alan_m2", width=80, anchor="center")
-        self.bos_konut_tree.column("ilk_tarih", width=100, anchor="center")
-        self.bos_konut_tree.column("son_tarih", width=100, anchor="center")
-        self.bos_konut_tree.column("sorumlu_gun_sayisi", width=120, anchor="center")
-        self.bos_konut_tree.column("konut_aidat_bedeli", width=120, anchor="center")
+        self.bos_konut_tree.column("sira_no", width=30, anchor="center")
+        self.bos_konut_tree.column("daire_adi", width=250, anchor="center")
+        self.bos_konut_tree.column("daire_no", width=30, anchor="center")
+        self.bos_konut_tree.column("alan_m2", width=30, anchor="center")
+        self.bos_konut_tree.column("ilk_tarih", width=30, anchor="center")
+        self.bos_konut_tree.column("son_tarih", width=30, anchor="center")
+        self.bos_konut_tree.column("sorumlu_gun_sayisi", width=50, anchor="center")
+        self.bos_konut_tree.column("konut_aidat_bedeli", width=70, anchor="center")
 
         # Scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.bos_konut_tree.yview)

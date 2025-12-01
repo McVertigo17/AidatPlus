@@ -145,20 +145,20 @@ class AidatPanel(BasePanel):
         self.aidat_islem_tree.heading("son_odeme", text="Son Ödeme")
 
         # Kolon genişlikleri ve hizalanması
-        self.aidat_islem_tree.column("id", width=50, anchor="center")
-        self.aidat_islem_tree.column("daire", width=120, anchor="center")
+        self.aidat_islem_tree.column("id", width=30, anchor="center")
+        self.aidat_islem_tree.column("daire", width=200, anchor="center")
         self.aidat_islem_tree.column("sakin", width=120, anchor="center")
-        self.aidat_islem_tree.column("yil", width=60, anchor="center")
-        self.aidat_islem_tree.column("ay", width=60, anchor="center")
-        self.aidat_islem_tree.column("aidat_tutari", width=90, anchor="center")
-        self.aidat_islem_tree.column("katki_payi", width=80, anchor="center")
-        self.aidat_islem_tree.column("elektrik", width=70, anchor="center")
-        self.aidat_islem_tree.column("su", width=50, anchor="center")
+        self.aidat_islem_tree.column("yil", width=45, anchor="center")
+        self.aidat_islem_tree.column("ay", width=45, anchor="center")
+        self.aidat_islem_tree.column("aidat_tutari", width=60, anchor="center")
+        self.aidat_islem_tree.column("katki_payi", width=60, anchor="center")
+        self.aidat_islem_tree.column("elektrik", width=60, anchor="center")
+        self.aidat_islem_tree.column("su", width=60, anchor="center")
         self.aidat_islem_tree.column("isinma", width=60, anchor="center")
-        self.aidat_islem_tree.column("ek_giderler", width=80, anchor="center")
-        self.aidat_islem_tree.column("toplam", width=80, anchor="center")
-        self.aidat_islem_tree.column("aciklama", width=150, anchor="w")
-        self.aidat_islem_tree.column("son_odeme", width=100, anchor="center")
+        self.aidat_islem_tree.column("ek_giderler", width=60, anchor="center")
+        self.aidat_islem_tree.column("toplam", width=75, anchor="center")
+        self.aidat_islem_tree.column("aciklama", width=150, anchor="center")
+        self.aidat_islem_tree.column("son_odeme", width=60, anchor="center")
 
         # Scrollbar
         v_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.aidat_islem_tree.yview)
@@ -946,7 +946,7 @@ class AidatPanel(BasePanel):
                     action = "eklendi"
 
                 # Başarı mesajı göster
-                show_success("Başarılı", f"Aidat işlemi {action}! Toplam: {toplam_val:.2f} ₺", parent=modal)
+                show_success(parent=modal, title="Başarılı", message=f"Aidat işlemi {action}! Toplam: {toplam_val:.2f} ₺")
 
             # Modal'ı kapat (error handler dışında)
             modal.destroy()
@@ -1213,7 +1213,7 @@ class AidatPanel(BasePanel):
         try:
             tarih_obj = datetime.strptime(tarih_str.strip(), "%d.%m.%Y")
         except ValueError:
-            show_error(modal, "Tarih GG.AA.YYYY formatında olmalıdır!")
+            show_error(parent=modal, title="Hata", message="Tarih GG.AA.YYYY formatında olmalıdır!")
             return
 
         # Hesap validasyonu
@@ -1221,17 +1221,17 @@ class AidatPanel(BasePanel):
         hesaplar = self.hesap_controller.get_aktif_hesaplar()
         hesap = next((h for h in hesaplar if h.ad == hesap_ad), None)
         if not hesap:
-            show_error(modal, "Geçerli bir hesap seçilmelidir!")
+            show_error(parent=modal, title="Hata", message="Geçerli bir hesap seçilmelidir!")
             return
 
         # Tutar validasyonu
         try:
             tutar = float(tutar_str.strip())
             if tutar <= 0:
-                show_error(modal, "Tutar pozitif sayı olmalıdır!")
+                show_error(parent=modal, title="Hata", message="Tutar pozitif sayı olmalıdır!")
                 return
         except ValueError:
-            show_error(modal, "Tutar geçerli bir sayı olmalıdır!")
+            show_error(parent=modal, title="Hata", message="Tutar geçerli bir sayı olmalıdır!")
             return
 
         try:
@@ -1273,7 +1273,7 @@ class AidatPanel(BasePanel):
 
                     # Modal'ı kapat SONRA mesaj göster
                     modal.destroy()
-                    show_success(self.parent, "Ödeme kaydı oluşturuldu ve gelir işlemi eklendi!")
+                    show_success(parent=self.parent, title="Başarılı", message="Ödeme kaydı oluşturuldu ve gelir işlemi eklendi!")
 
                     # Listeyi yenile
                     self.load_data()
