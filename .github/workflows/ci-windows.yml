@@ -1,0 +1,32 @@
+name: CI Pipeline (Windows)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    name: Tests on Windows
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov coverage
+        pip install -r requirements.txt
+    
+    - name: Run tests with pytest
+      run: |
+        pytest tests/ -v --tb=short
+      continue-on-error: false

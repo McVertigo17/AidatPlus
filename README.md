@@ -3,6 +3,8 @@
 ![Python](https://img.shields.io/badge/Python-3.7%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+![CI](https://github.com/McVertigo17/AidatPlus/workflows/CI%20Pipeline/badge.svg)
+![Tests](https://img.shields.io/badge/Tests-pytest-blue)
 
 Modern, offline çalışan lojman kompleksi aidat ve finansal yönetim uygulaması.
 
