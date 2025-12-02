@@ -92,12 +92,14 @@ class AidatPlusApp:
         window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1600) or 1600
         window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 900) or 900
         
+        logger.info(f"Window size from config: width={window_width}, height={window_height}")
+        
         # ⚠️ Pencere boyutu kısıtlamalarını AYARLAMA (sabit boyut olduğu için gerekli değil)
         # Sadece pencere konumlandırması yapılıyor
         
         # Ana pencereyi ekranın üst-ortasında konumlandır
         self.responsive_manager.center_window(window_width, window_height)
-        logger.debug(f"Window geometry: {window_width}x{window_height} (Fixed size, no resizing - Expanded)")
+        logger.info(f"Window geometry set: {window_width}x{window_height} (Fixed size, no resizing)")
 
         # Icon ayarı (varsa)
         try:
