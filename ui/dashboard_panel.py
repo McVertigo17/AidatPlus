@@ -9,6 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from datetime import datetime, timedelta
 from ui.base_panel import BasePanel
+from ui.responsive_charts import ResponsiveChartManager, ResponsiveChartBuilder
 from typing import Optional
 from ui.error_handler import (
     ErrorHandler, handle_exception, show_error, show_success, show_warning
@@ -51,6 +52,8 @@ class DashboardPanel(BasePanel):
         self.refresh_interval = 30000  # 30 saniye (milisaniye cinsinden)
         self.refresh_job = None
         self.last_update_label: Optional[ctk.CTkLabel] = None
+        self.chart_manager: Optional[ResponsiveChartManager] = None
+        self.chart_builder: Optional[ResponsiveChartBuilder] = None
         
         super().__init__(parent, "📊 Dashboard", colors)
 
@@ -131,6 +134,10 @@ class DashboardPanel(BasePanel):
         # Scroll frame
         self.scroll_frame = ctk.CTkScrollableFrame(main_frame, fg_color=self.colors["background"])
         self.scroll_frame.pack(fill="both", expand=True)
+
+        # Responsive chart manager'ı başlat
+        self.chart_manager = ResponsiveChartManager(self.scroll_frame)
+        self.chart_builder = ResponsiveChartBuilder(self.chart_manager)
 
         # ===== KPI CARDS BÖLÜMÜ =====
         self.kpi_frame = None
@@ -317,6 +324,7 @@ class DashboardPanel(BasePanel):
         """6 aylık gelir/gider trendi
         
         Son 12 ayın gelir ve gider trendini çizgi grafik olarak gösterir.
+        Responsive boyutlandırma ile ekrana göre dinamik boyut ayarlanır.
         
         Args:
             parent (ctk.CTkFrame): Grafiğin ekleneceği çerçeve
@@ -343,34 +351,43 @@ class DashboardPanel(BasePanel):
         # Veriler
         aylar, gelirler, giderler = self.get_6ay_trend_data()
 
-        # Matplotlib figürü - daha geniş yap (12 ay için)
-        fig = Figure(figsize=(9, 2.8), dpi=90)
-        ax = fig.add_subplot(111)
-        
-        x = range(len(aylar))
-        ax.plot(x, gelirler, marker='o', label='Gelirler', color='#28A745', linewidth=2)
-        ax.plot(x, giderler, marker='s', label='Giderler', color='#DC3545', linewidth=2)
-        
-        ax.set_xticks(x)
-        ax.set_xticklabels(aylar, rotation=45, ha='right', fontsize=8)
-        ax.set_ylabel('Miktar (₺)', fontsize=8)
-        ax.legend(loc='upper left', fontsize=7)
-        ax.grid(True, alpha=0.2)
-        ax.tick_params(labelsize=7)
-        ax.set_facecolor(self.colors["surface"])
-        fig.patch.set_facecolor(self.colors["surface"])
-
-        plt.tight_layout()
-
-        # Canvas
-        canvas = FigureCanvasTkAgg(fig, master=chart_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True, padx=3, pady=3)
+        # Responsive grafik oluştur
+        try:
+            if self.chart_builder:
+                fig = self.chart_builder.create_responsive_line_chart(
+                    x_data=aylar,
+                    y_data_dict={
+                        'Gelirler': gelirler,
+                        'Giderler': giderler
+                    },
+                    xlabel="",
+                    ylabel='Miktar (₺)',
+                    colors={'Gelirler': '#28A745', 'Giderler': '#DC3545'},
+                    colspan=colspan
+                )
+                
+                # Arka plan rengi ayarla
+                for ax in fig.get_axes():
+                    ax.set_facecolor(self.colors["surface"])
+                fig.patch.set_facecolor(self.colors["surface"])
+                
+                # Canvas'ı embed et
+                self.chart_manager.embed_chart(chart_frame, fig, "trend", colspan)
+        except Exception as e:
+            self.logger.error(f"Trend chart creation error: {str(e)}")
+            error_label = ctk.CTkLabel(
+                chart_frame,
+                text=f"Grafik oluşturma hatası: {str(e)[:50]}",
+                text_color=self.colors["error"],
+                font=ctk.CTkFont(size=8)
+            )
+            error_label.pack(expand=True)
 
     def create_hesap_dagitimi_chart(self, parent: ctk.CTkFrame, row: int, col: int) -> None:
         """Hesaplar arası bakiye dağılımı
         
         Tüm hesapların bakiye dağılımını pasta grafik olarak gösterir.
+        Responsive boyutlandırma ile ekrana göre dinamik boyut ayarlanır.
         
         Args:
             parent (ctk.CTkFrame): Grafiğin ekleneceği çerçeve
@@ -404,26 +421,38 @@ class DashboardPanel(BasePanel):
             info_label.pack(expand=True)
             return
 
-        # Matplotlib figürü
-        fig = Figure(figsize=(3.5, 1.8), dpi=100)
-        ax = fig.add_subplot(111)
-        
-        colors_list = ['#28A745', '#0055A4', '#FFC107', '#DC3545', '#17A2B8']
-        ax.pie(bakiyeler, labels=hesap_adlari, autopct='%1.0f%%', colors=colors_list[:len(hesap_adlari)], startangle=90, textprops={'fontsize': 6})
-        ax.set_facecolor(self.colors["surface"])
-        fig.patch.set_facecolor(self.colors["surface"])
-
-        plt.tight_layout()
-
-        # Canvas
-        canvas = FigureCanvasTkAgg(fig, master=chart_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True, padx=3, pady=3)
+        # Responsive grafik oluştur
+        try:
+            if self.chart_builder:
+                colors_list = ['#28A745', '#0055A4', '#FFC107', '#DC3545', '#17A2B8']
+                fig = self.chart_builder.create_responsive_pie_chart(
+                    sizes=bakiyeler,
+                    labels=hesap_adlari,
+                    colors=colors_list[:len(hesap_adlari)]
+                )
+                
+                # Arka plan rengi ayarla
+                for ax in fig.get_axes():
+                    ax.set_facecolor(self.colors["surface"])
+                fig.patch.set_facecolor(self.colors["surface"])
+                
+                # Canvas'ı embed et
+                self.chart_manager.embed_chart(chart_frame, fig, "pie")
+        except Exception as e:
+            self.logger.error(f"Hesap dağılımı chart error: {str(e)}")
+            error_label = ctk.CTkLabel(
+                chart_frame,
+                text=f"Grafik oluşturma hatası",
+                text_color=self.colors["error"],
+                font=ctk.CTkFont(size=8)
+            )
+            error_label.pack(expand=True)
 
     def create_aidat_durum_chart(self, parent: ctk.CTkFrame, row: int, col: int) -> None:
         """Aidat ödeme durumu
         
         Son ay aidat ödemelerinin durum dağılımını pasta grafik olarak gösterir.
+        Responsive boyutlandırma ile ekrana göre dinamik boyut ayarlanır.
         
         Args:
             parent (ctk.CTkFrame): Grafiğin ekleneceği çerçeve
@@ -458,26 +487,35 @@ class DashboardPanel(BasePanel):
             info_label.pack(expand=True)
             return
 
-        # Matplotlib figürü
-        fig = Figure(figsize=(3.5, 1.8), dpi=100)
-        ax = fig.add_subplot(111)
-        
-        labels = ['Ödenen', 'Ödenmemiş']
-        sizes = [odenen, odenmeyen]
-        colors_list = ['#28A745', '#DC3545']
-        explode = (0.05, 0.05)
-        
-        ax.pie(sizes, explode=explode, labels=labels, autopct='%1.0f%%', 
-               colors=colors_list, startangle=90, textprops={'fontsize': 6})
-        ax.set_facecolor(self.colors["surface"])
-        fig.patch.set_facecolor(self.colors["surface"])
-
-        plt.tight_layout()
-
-        # Canvas
-        canvas = FigureCanvasTkAgg(fig, master=chart_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True, padx=3, pady=3)
+        # Responsive grafik oluştur
+        try:
+            if self.chart_builder:
+                labels = ['Ödenen', 'Ödenmemiş']
+                sizes = [odenen, odenmeyen]
+                colors_list = ['#28A745', '#DC3545']
+                
+                fig = self.chart_builder.create_responsive_pie_chart(
+                    sizes=sizes,
+                    labels=labels,
+                    colors=colors_list
+                )
+                
+                # Arka plan rengi ayarla
+                for ax in fig.get_axes():
+                    ax.set_facecolor(self.colors["surface"])
+                fig.patch.set_facecolor(self.colors["surface"])
+                
+                # Canvas'ı embed et
+                self.chart_manager.embed_chart(chart_frame, fig, "pie")
+        except Exception as e:
+            self.logger.error(f"Aidat durum chart error: {str(e)}")
+            error_label = ctk.CTkLabel(
+                chart_frame,
+                text=f"Grafik oluşturma hatası",
+                text_color=self.colors["error"],
+                font=ctk.CTkFont(size=8)
+            )
+            error_label.pack(expand=True)
 
     # ===== VERİ ALMA FONKSİYONLARI =====
 
