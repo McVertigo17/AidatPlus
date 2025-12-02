@@ -279,7 +279,8 @@ class ResponsiveChartBuilder:
             ax.grid(True, alpha=0.2)
             ax.tick_params(labelsize=7)
             
-            fig.tight_layout()
+            # Grafik margin ayarları (sağa kaymayı önle)
+            fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
             
             self.logger.debug(f"Line chart created: {figsize}")
             

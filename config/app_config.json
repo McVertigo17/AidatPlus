@@ -15,8 +15,8 @@
   },
   "ui": {
     "theme": "light",
-    "default_width": 1600,
-    "default_height": 900,
+    "default_width": 1200,
+    "default_height": 700,
     "font_size": 11,
     "color_scheme": "modern"
   },

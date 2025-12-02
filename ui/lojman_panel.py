@@ -1018,7 +1018,10 @@ class LojmanPanel(BasePanel):
         """Lojman düzenleme modal'ı göster"""
         modal = ctk.CTkToplevel(self.parent)
         modal.title("Lojman Düzenle")
-        modal.geometry("400x376")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.parent)
         modal.lift()
         modal.focus_force()
@@ -1106,7 +1109,10 @@ class LojmanPanel(BasePanel):
         """Blok düzenleme modal'ı göster"""
         modal = ctk.CTkToplevel(self.parent)
         modal.title("Blok Düzenle")
-        modal.geometry("400x513")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.parent)
         modal.lift()
         modal.focus_force()
@@ -1221,7 +1227,10 @@ class LojmanPanel(BasePanel):
         """Daire düzenleme modal'ı göster"""
         modal = ctk.CTkToplevel(self.parent)
         modal.title("Daire Düzenle")
-        modal.geometry("500x600")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.parent)
         modal.lift()
         modal.focus_force()

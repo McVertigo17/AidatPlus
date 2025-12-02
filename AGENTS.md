@@ -624,13 +624,26 @@ Detaylı iyileştirme planı için bkz: `docs/TODO.md`
 
 ## 📚 Dokümantasyon Dosyaları
 
-| Dosya | İçerik | Hedef Kitle |
-|-------|--------|-------------|
-| **AGENTS.md** | Agent komutları, stil rehberi *(kök + docs)* | Geliştiriciler |
-| **docs/PROJE_YAPISI.md** | Mimari detayları, bileşenler | Teknisyenler |
-| **docs/TODO.md** | Geliştirme planı, açık sorunlar | Proje yöneticisi |
-| **docs/KILAVUZLAR.md** | Özellik kullanım talimatları | Son kullanıcılar |
-| **docs/SORULAR_CEVAPLAR.md** | FAQ, sorun giderme, best practices | Tüm kullanıcılar |
+Tüm dokümantasyon `docs/` klasöründe bulunmaktadır.
+
+| Dosya | İçerik |
+|-------|--------|
+| **PROJE_YAPISI.md** | Mimari detayları, dosya yapısı, bileşenler |
+| **TODO.md** | Geliştirme planı, açık sorunlar, sürümler |
+| **KILAVUZLAR.md** | Özellik kullanım talimatları |
+| **SORULAR_CEVAPLAR.md** | FAQ, sorun giderme, best practices |
+| **DATABASE_INDEXING_AND_OPTIMIZATION.md** | Indexing (22), pagination, performans |
+| **UI_RESPONSIVE_DESIGN.md** | Responsive UI sistemi, breakpoint'ler |
+| **USER_FEEDBACK_INTEGRATION.md** | Loading indicators, toast, status bar |
+| **CONFIGURATION_MANAGEMENT.md** | Configuration manager, environment variables |
+| **ERROR_HANDLING_GUIDE.md** | Exceptions, validation, error handling |
+| **TYPE_HINTS_STANDARDIZATION.md** | Type hints, MyPy, best practices |
+| **ATOMIC_TRANSACTIONS.md** | Transaction yönetimi (v1.4) |
+| **SAKIN_TARIH_VALIDATION.md** | Tarih validasyonu (v1.3.1) |
+| **SAKIN_ARSIV_FIX.md** | Archive preservation (v1.2) |
+| **PERFORMANCE_OPTIMIZATION_V1_5_3.md** | Pencere optimize (v1.5.3) |
+
+**Not**: AGENTS.md stil rehberi kök klasördedir.
 
 ---
 

@@ -264,14 +264,9 @@ class ResponsiveWindow:
             event: Configure event
         """
         try:
-            width = max(self.min_window_width, event.width)
-            height = max(self.min_window_height, event.height)
-            
-            # Kısıtlamaları uygula
-            if width != event.width or height != event.height:
-                self.window.geometry(f"{width}x{height}")
-            
-            self.logger.debug(f"Window resized: {width}x{height}")
+            # Pencere resize sırasında boyut sıkıştırılmasını devre dışı bırak
+            # Kullanıcı istediği boyuta pencereyi açıp kapatabilir
+            self.logger.debug(f"Window resized: {event.width}x{event.height}")
         except Exception as e:
             self.logger.error(f"Window resize error: {str(e)}")
     

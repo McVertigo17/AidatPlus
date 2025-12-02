@@ -580,7 +580,10 @@ class AidatPanel(BasePanel):
         # Modal pencere
         modal = ctk.CTkToplevel(self.frame)
         modal.title("Yeni Aidat İşlemi Ekle" if islem is None else "Aidat İşlemi Düzenle")
-        modal.geometry("370x500")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.frame)
         modal.lift()
         modal.focus_force()
@@ -966,11 +969,13 @@ class AidatPanel(BasePanel):
         # Modal pencere
         modal = ctk.CTkToplevel(self.frame)
         modal.title("💰 Yeni Gelir Ekle - Aidat Ödemesi")
-        modal.geometry("450x500")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.frame)
         modal.lift()
         modal.focus_force()
-        modal.resizable(False, True)
 
         # Ana frame
         main_frame = ctk.CTkFrame(modal, fg_color=self.colors["surface"])

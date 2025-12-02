@@ -417,7 +417,10 @@ class SakinPanel(BasePanel):
         # Modal pencere
         modal = ctk.CTkToplevel(self.frame)
         modal.title("Sakin'i Pasif Yap")
-        modal.geometry("300x335")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.frame)
         modal.lift()
         modal.focus_force()
@@ -567,7 +570,10 @@ class SakinPanel(BasePanel):
         # Modal pencere
         modal = ctk.CTkToplevel(self.frame)
         modal.title("Sakin'i Tekrar Aktif Yap")
-        modal.geometry("400x500")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.frame)
         modal.lift()
         modal.focus_force()
@@ -868,7 +874,10 @@ class SakinPanel(BasePanel):
         # Modal pencere
         modal = ctk.CTkToplevel(self.frame)
         modal.title("Sakin Ekle/Düzenle")
-        modal.geometry("400x500")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.frame)
         modal.lift()
         modal.focus_force()

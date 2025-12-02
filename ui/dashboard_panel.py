@@ -49,7 +49,7 @@ class DashboardPanel(BasePanel):
         self.aidat_controller = AidatIslemController()
         self.daire_controller = DaireController()
         self.colors = colors
-        self.refresh_interval = 30000  # 30 saniye (milisaniye cinsinden)
+        self.refresh_interval = 300000  # 5 dakika (milisaniye cinsinden)
         self.refresh_job = None
         self.last_update_label: Optional[ctk.CTkLabel] = None
         self.chart_manager: Optional[ResponsiveChartManager] = None
@@ -104,11 +104,17 @@ class DashboardPanel(BasePanel):
         """Otomatik yenileme başlat
         
         Dashboard'u belirli aralıklarla yenilemek için periyodik görev başlatır.
-        ⚠️ Not: Otomatik refresh kapalı - performans nedeniyle manuel yenileme tercih edilir
+        5 dakikada bir otomatik yenilenir.
         """
-        # ⚠️ Otomatik refresh devre dışı - performans nedeniyle
-        # Kullanıcı F5 veya manuel yenileme buttonuyla yenileyebilir
-        pass
+        # Önceki görev varsa iptal et
+        if self.refresh_job:
+            self.frame.after_cancel(self.refresh_job)
+        
+        # Dashboard'u yenile
+        self.refresh_dashboard()
+        
+        # Sonraki yenilemeyi planla
+        self.refresh_job = self.frame.after(self.refresh_interval, self.start_auto_refresh)
     
     def stop_auto_refresh(self) -> None:
         """Otomatik yenilemeyi durdur
@@ -168,14 +174,31 @@ class DashboardPanel(BasePanel):
         )
         title_label.pack(anchor="w", side="left")
         
-        # Son güncelleme saati (sağ tarafta)
+        # Son güncelleme saati ve yenile butonu (sağ tarafta)
+        refresh_frame = ctk.CTkFrame(title_frame, fg_color=self.colors["background"])
+        refresh_frame.pack(anchor="e", side="right")
+        
         self.last_update_label = ctk.CTkLabel(
-            title_frame,
+            refresh_frame,
             text=self._get_formatted_time(),
             font=ctk.CTkFont(size=9),
             text_color=self.colors["text_secondary"]
         )
-        self.last_update_label.pack(anchor="e", side="right")
+        self.last_update_label.pack(side="left", padx=(0, 10))
+        
+        # Yenile ikonu (buton)
+        refresh_btn = ctk.CTkButton(
+            refresh_frame,
+            text="🔄",
+            command=self.refresh_dashboard,
+            fg_color="transparent",
+            hover_color=self.colors["text_secondary"],
+            text_color="#4a4a4a",
+            font=ctk.CTkFont(size=18),
+            width=40,
+            height=30
+        )
+        refresh_btn.pack(side="left")
 
         # KPI grid - Grid layout ile responsive yerleştirme
         kpi_grid = ctk.CTkFrame(cards_frame, fg_color=self.colors["background"])
@@ -332,7 +355,7 @@ class DashboardPanel(BasePanel):
             colspan (int): Sütun genişliği (varsayılan: 1)
         """
         chart_frame = ctk.CTkFrame(parent, fg_color=self.colors["surface"], corner_radius=6)
-        chart_frame.grid(row=row, column=col, columnspan=colspan, padx=3, pady=3, sticky="nsew")
+        chart_frame.grid(row=row, column=col, columnspan=colspan, padx=0, pady=3, sticky="nsew")
         parent.grid_rowconfigure(row, weight=1)
         parent.grid_columnconfigure(col, weight=1)
         if colspan > 1:

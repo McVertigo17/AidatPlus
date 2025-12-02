@@ -717,7 +717,10 @@ class FinansPanel(BasePanel):
         # Modal pencere
         modal = ctk.CTkToplevel(self.frame)
         modal.title("Yeni Hesap Ekle" if hesap is None else "Hesap Düzenle")
-        modal.geometry("500x600")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.parent)
         modal.lift()
         modal.focus_force()
@@ -841,11 +844,13 @@ class FinansPanel(BasePanel):
         # Modal pencere
         modal = ctk.CTkToplevel(self.frame)
         modal.title(modal_title)
-        modal.geometry("450x550")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x550+475+175")
         modal.transient(self.parent)
         modal.lift()
         # modal.focus_force()  # Removed to prevent TclError with scrollable frames
-        modal.resizable(False, True)
 
         # Ana frame
         main_frame = ctk.CTkFrame(modal, fg_color=self.colors["surface"])

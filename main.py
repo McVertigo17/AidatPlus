@@ -83,19 +83,16 @@ class AidatPlusApp:
         # Ana pencere
         self.root = ctk.CTk()
         self.root.title("Aidat Plus - Lojman Yönetim Sistemi")
-        self.root.resizable(False, False)  # ⚠️ Pencere boyutlandırma KAPALI (sabit boyut)
+        self.root.resizable(False, False)  # Pencere boyutlandırma KAPALI (sabit boyut)
         
         # Responsive pencere yöneticisini başlat
         self.responsive_manager = ResponsiveWindow(self.root)
         
-        # Konfigürasyondan pencere boyutlarını al (fallback: 1600x900)
-        window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1600) or 1600
-        window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 900) or 900
+        # Konfigürasyondan pencere boyutlarını al (fallback: 1200x700)
+        window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1200) or 1200
+        window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 700) or 700
         
         logger.info(f"Window size from config: width={window_width}, height={window_height}")
-        
-        # ⚠️ Pencere boyutu kısıtlamalarını AYARLAMA (sabit boyut olduğu için gerekli değil)
-        # Sadece pencere konumlandırması yapılıyor
         
         # Ana pencereyi ekranın üst-ortasında konumlandır
         self.responsive_manager.center_window(window_width, window_height)

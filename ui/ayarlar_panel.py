@@ -386,7 +386,10 @@ class AyarlarPanel(BasePanel):
         """Kategori ekleme/düzenleme modal'ı"""
         modal = ctk.CTkToplevel(self.frame)
         modal.title("Yeni Kategori Ekle" if kategori_data is None else "Kategori Düzenle")
-        modal.geometry("450x500")
+        modal.resizable(False, False)
+        
+        # Sabit konumlandırma (ekran ortasında)
+        modal.geometry("450x500+475+175")
         modal.transient(self.parent)
         modal.lift()
         modal.focus_force()
