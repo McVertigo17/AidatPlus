@@ -764,9 +764,9 @@ class AidatPanel(BasePanel):
         if islem and islem.son_odeme_tarihi:
             tarih_entry.insert(0, islem.son_odeme_tarihi.strftime("%d.%m.%Y"))
         else:
-            # Bir sonraki ayın 10'una varsayılan tarih
-            next_month = datetime.now().replace(day=10)
-            if datetime.now().day > 10:
+            # Bir sonraki ayın 16'una varsayılan tarih
+            next_month = datetime.now().replace(day=16)
+            if datetime.now().day > 16:
                 next_month = next_month.replace(month=next_month.month + 1)
             tarih_entry.insert(0, next_month.strftime("%d.%m.%Y"))
 

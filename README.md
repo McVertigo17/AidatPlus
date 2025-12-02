@@ -113,6 +113,14 @@ pip install -r requirements.txt
 python main.py
 ```
 
+### Testleri Çalıştırma (Geliştirici)
+
+Projede yerel testleri çalıştırmak için aşağıdaki komutu kullanın. Bu komut kapsam raporu (coverage) üretir ve yüzde alt limiti sağlanmazsa hata verir:
+
+```powershell
+pytest -v --tb=short --cov=. --cov-report=term-missing --cov-fail-under=70
+```
+
 > **Not**: PowerShell'de execution policy hatası alırsanız, yönetici olarak açıp şu komutu çalıştırın:
 > ```powershell
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser

@@ -15,6 +15,8 @@ from models.exceptions import ValidationError
 from database.config import get_db
 from datetime import datetime, date
 from utils.logger import get_logger
+from utils.pagination import PaginationHelper, PaginationResult
+from utils.query_optimization import QueryOptimizer
 
 class SakinController(BaseController[Sakin]):
     """
@@ -489,3 +491,152 @@ class SakinController(BaseController[Sakin]):
         result = self.create(sakin_data, db)
         self.logger.info(f"Successfully added new resident with id {result.id}")
         return result
+    
+    def get_aktif_sakinler_paginated(
+        self,
+        page: int = 1,
+        page_size: int = 50,
+        db: Session = None
+    ) -> PaginationResult:
+        """
+        Aktif sakinleri sayfalı olarak al (Lazy Loading)
+        
+        Args:
+            page: Sayfa numarası (1-indexed)
+            page_size: Sayfa başına sakin sayısı (default: 50)
+            db: Veritabanı session
+        
+        Returns:
+            PaginationResult: Sayfalanmış aktif sakinler
+        
+        Example:
+            >>> result = controller.get_aktif_sakinler_paginated(page=1, page_size=20)
+            >>> print(f"Toplam: {result.total_count}, Sayfa: {result.page}/{result.total_pages}")
+            >>> for sakin in result.items:
+            ...     print(sakin.ad_soyad)
+        """
+        session = db or get_db()
+        close_db = db is None
+        
+        try:
+            query = session.query(Sakin).filter(
+                Sakin.aktif == True,
+                Sakin.cikis_tarihi == None
+            ).order_by(Sakin.ad_soyad)
+            
+            # Index kullanacak şekilde optimize et
+            result = PaginationHelper.paginate(query, page, page_size)
+            self.logger.info(f"Retrieved {len(result.items)} active residents from page {page}")
+            return result
+        finally:
+            if close_db:
+                session.close()
+    
+    def get_pasif_sakinler_paginated(
+        self,
+        page: int = 1,
+        page_size: int = 50,
+        db: Session = None
+    ) -> PaginationResult:
+        """
+        Pasif sakinleri sayfalı olarak al (Lazy Loading)
+        
+        Args:
+            page: Sayfa numarası (1-indexed)
+            page_size: Sayfa başına sakin sayısı (default: 50)
+            db: Veritabanı session
+        
+        Returns:
+            PaginationResult: Sayfalanmış pasif sakinler
+        """
+        session = db or get_db()
+        close_db = db is None
+        
+        try:
+            query = session.query(Sakin).filter(
+                Sakin.aktif == True,
+                Sakin.cikis_tarihi != None
+            ).order_by(Sakin.ad_soyad)
+            
+            result = PaginationHelper.paginate(query, page, page_size)
+            self.logger.info(f"Retrieved {len(result.items)} passive residents from page {page}")
+            return result
+        finally:
+            if close_db:
+                session.close()
+    
+    def search_sakinler_paginated(
+        self,
+        search_text: str,
+        page: int = 1,
+        page_size: int = 50,
+        db: Session = None
+    ) -> PaginationResult:
+        """
+        Sakin adına göre sayfalı arama yap (Index ile optimize)
+        
+        Args:
+            search_text: Aranacak metin
+            page: Sayfa numarası
+            page_size: Sayfa başına sakin sayısı
+            db: Veritabanı session
+        
+        Returns:
+            PaginationResult: Arama sonuçları
+        
+        Example:
+            >>> result = controller.search_sakinler_paginated("Ali", page=1)
+            >>> for sakin in result.items:
+            ...     print(sakin.ad_soyad)
+        """
+        session = db or get_db()
+        close_db = db is None
+        
+        try:
+            # Index kullanacak şekilde LIKE filtresi
+            query = session.query(Sakin).filter(
+                Sakin.ad_soyad.ilike(f"%{search_text}%"),
+                Sakin.aktif == True
+            ).order_by(Sakin.ad_soyad)
+            
+            result = PaginationHelper.paginate(query, page, page_size)
+            self.logger.info(f"Search for '{search_text}' returned {result.total_count} results")
+            return result
+        finally:
+            if close_db:
+                session.close()
+    
+    def get_daireki_sakinler_paginated(
+        self,
+        daire_id: int,
+        page: int = 1,
+        page_size: int = 50,
+        db: Session = None
+    ) -> PaginationResult:
+        """
+        Belirli bir dairenin sakinlerini sayfalı olarak al
+        
+        Args:
+            daire_id: Daire ID'si
+            page: Sayfa numarası
+            page_size: Sayfa başına sakin sayısı
+            db: Veritabanı session
+        
+        Returns:
+            PaginationResult: Sayfalanmış sakinler
+        """
+        session = db or get_db()
+        close_db = db is None
+        
+        try:
+            # Index: daire_id sorgusu
+            query = session.query(Sakin).filter(
+                Sakin.daire_id == daire_id
+            ).order_by(Sakin.giris_tarihi.desc())
+            
+            result = PaginationHelper.paginate(query, page, page_size)
+            self.logger.info(f"Retrieved {len(result.items)} residents for apartment {daire_id}")
+            return result
+        finally:
+            if close_db:
+                session.close()

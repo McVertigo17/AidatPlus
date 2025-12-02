@@ -285,9 +285,9 @@ class SakinPanel(BasePanel):
                     sakin.notlar or ""
                 ))
         except DatabaseError as e:
-            show_error("Veritabanı Hatası", str(e.message), parent=self.frame)
+            show_error(parent=self.frame, title="Veritabanı Hatası", message=str(e.message))
         except Exception as e:
-            show_error("Hata", f"Aktif sakinler yüklenirken hata oluştu: {str(e)}", parent=self.frame)
+            show_error(parent=self.frame, title="Hata", message=f"Aktif sakinler yüklenirken hata oluştu: {str(e)}")
 
     def load_pasif_sakinler(self) -> None:
         """Pasif sakinleri yükle"""
@@ -332,9 +332,9 @@ class SakinPanel(BasePanel):
                     sakin.cikis_tarihi.strftime("%d.%m.%Y") if sakin.cikis_tarihi else ""
                 ))
         except DatabaseError as e:
-            show_error("Veritabanı Hatası", str(e.message), parent=self.frame)
+            show_error(parent=self.frame, title="Veritabanı Hatası", message=str(e.message))
         except Exception as e:
-            show_error("Hata", f"Pasif sakinler yüklenirken hata oluştu: {str(e)}", parent=self.frame)
+            show_error(parent=self.frame, title="Hata", message=f"Pasif sakinler yüklenirken hata oluştu: {str(e)}")
 
     def load_daireler(self) -> None:
         """Daireleri yükle"""

@@ -1,7 +1,7 @@
 # Aidat Plus - Dokümantasyon Özeti
 
-**Tarih**: 29 Kasım 2025  
-**Sürüm**: 1.1  
+**Tarih**: 2 Aralık 2025  
+**Sürüm**: 1.2  
 **Durum**: ✅ Güncellendi ve Organize Edildi
 
 ---
@@ -32,8 +32,10 @@ Dosyalar şimdi `docs/` klasöründe yer almaktadır:
 | **V1.1_EKSIKLER_VE_DEVAMLAR.md** | v1.1 sonrası eksik görevler | ~250 satır | Proje Yöneticileri |
 | **LOGGING_TAMAMLAMA_OZET.md** | Logging sistem tamamlama özeti | ~200 satır | Geliştiriciler |
 | **LOGGING_TAMAMLAMA_PLANI.md** | Logging sistemi tamamlama planı | ~400 satır | Geliştiriciler |
+| **TEST_STRATEGY.md** | Test stratejisi ve rehberi | ~480 satır | Geliştiriciler |
+| **CI_PIPELINE.md** | CI/CD pipeline yapılandırması | ~200 satır | Geliştiriciler |
 
-**Toplam Dokümantasyon**: ~2.500+ satır
+**Toplam Dokümantasyon**: ~3.000+ satır
 
 ---
 
@@ -94,6 +96,18 @@ Dosyalar şimdi `docs/` klasöründe yer almaktadır:
 #### LOGGING_TAMAMLAMA_PLANI.md
 - Detaylı logging tamamlama planı
 - Adım adım talimatlar
+
+#### TEST_STRATEGY.md
+- Test türleri ve stratejileri
+- Test yazım kuralları
+- Coverage hedefleri
+- Örnek testler
+- Sorun giderme rehberi
+
+#### CI_PIPELINE.md
+- GitHub Actions konfigürasyonu
+- CI/CD workflow detayları
+- Test ve deployment süreçleri
 
 ### 3. **Proje Yönetimi Dokümantasyonu**
 
@@ -165,6 +179,13 @@ Dokümantasyon Hiyerarşisi
 │  │  ├─ Eksikler
 │  │  └─ v1.2 Planı
 │  │
+│  ├─ TEST_STRATEGY.md (Geliştirici)
+│  │  ├─ Test Türleri
+│  │  ├─ Test Strukturu
+│  │  ├─ Yazı Kılavuzları
+│  │  ├─ Coverage Hedefleri
+│  │  └─ Örnek Testler
+│  │
 │  └─ SORULAR_CEVAPLAR.md (Genel)
 │     ├─ Genel Sorular
 │     ├─ Kurulum Sorunları
@@ -189,7 +210,8 @@ Dokümantasyon Hiyerarşisi
 2. **docs/AGENTS.md** - Stil rehberi ve komutlar
 3. **docs/PROJE_YAPISI.md** - Mimari detayları
 4. **docs/TODO.md** - Geliştirme planı
-5. **docs/V1.1_EKSIKLER_VE_DEVAMLAR.md** - Devam edenler
+5. **docs/TEST_STRATEGY.md** - Test rehberi
+6. **docs/CI_PIPELINE.md** - CI/CD konfigürasyonu
 
 ### 👔 Proje Yöneticisi
 1. **docs/README.md** - Proje özeti
@@ -217,8 +239,8 @@ Dokümantasyon Hiyerarşisi
 - ✅ Best practices ve ipuçları
 
 ### Güncellik
-- ✅ 29 Kasım 2025'te güncellendi
-- ✅ Mevcut v1.1 versiyonuna uygun
+- ✅ 2 Aralık 2025'te güncellendi
+- ✅ Mevcut v1.4 versiyonuna uygun
 - ✅ Future versions için roadmap
 - ✅ TODO listesi aktif tutulur
 
@@ -259,15 +281,15 @@ Dokümantasyon Hiyerarşisi
 ### Dosya Sayıları
 | Tür | docs/ | Toplam |
 |-----|-------|--------|
-| Markdown | 9 | 9 |
+| Markdown | 11 | 11 |
 | Python | 31 | 31 |
-| **Toplam** | **40** | **40** |
+| **Toplam** | **42** | **42** |
 
 ### Satır Sayıları
 | Dosya | Satır | Kelime |
 |-------|-------|--------|
 | docs/README.md | ~350 | ~2.000 |
-| docs/AGENTS.md | ~657 | ~3.000 |
+| docs/AGENTS.md | ~980 | ~5.000 |
 | docs/PROJE_YAPISI.md | ~250 | ~1.500 |
 | docs/KILAVUZLAR.md | ~600 | ~4.000 |
 | docs/TODO.md | ~350 | ~2.500 |
@@ -275,7 +297,9 @@ Dokümantasyon Hiyerarşisi
 | docs/V1.1_EKSIKLER_VE_DEVAMLAR.md | ~250 | ~1.500 |
 | docs/LOGGING_TAMAMLAMA_OZET.md | ~200 | ~1.200 |
 | docs/LOGGING_TAMAMLAMA_PLANI.md | ~400 | ~2.500 |
-| **TOPLAM** | **~3.600** | **~22.000** |
+| docs/TEST_STRATEGY.md | ~480 | ~3.000 |
+| docs/CI_PIPELINE.md | ~200 | ~1.200 |
+| **TOPLAM** | **~4.200** | **~28.000** |
 
 ---
 
@@ -290,8 +314,10 @@ Dokümantasyon Hiyerarşisi
 ✅ Proje Mimarisi  
 ✅ Best Practices  
 ✅ Geçmiş ve Roadmap  
+✅ Test Stratejisi  
+✅ CI/CD Pipeline  
 
-### Planlı Kategoriler (v1.2+)
+### Planlı Kategoriler (v1.5+)
 🔜 Video Tutorials  
 🔜 API Documentation  
 🔜 Database Schema  
@@ -318,7 +344,7 @@ Dokümantasyon Hiyerarşisi
 
 - ✅ Hassas bilgiler yok (TCN, şifreler vb.)
 - ✅ Kamu açısı uygun
-- ✅ Veri gizliliği korunmış
+- ✅ Veri gizliliği korunmuş
 - ✅ Yasal uygunluk sağlanmış
 
 ---
@@ -356,6 +382,6 @@ Dokümantasyon Hiyerarşisi
 
 ---
 
-**Hazırlandı**: 29 Kasım 2025  
+**Hazırlandı**: 2 Aralık 2025  
 **Durum**: ✅ Tamamlandı ve Organize Edildi  
-**Sonraki Adım**: Docstring Tamamlama (v1.2)
+**Sonraki Adım**: PDF Dokümantasyon Üretimi (v1.5)

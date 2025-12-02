@@ -28,5 +28,5 @@ jobs:
     
     - name: Run tests with pytest
       run: |
-        pytest tests/ -v --tb=short
+        pytest tests/ -v --tb=short --cov=. --cov-report=xml --cov-report=html --cov-fail-under=70
       continue-on-error: false

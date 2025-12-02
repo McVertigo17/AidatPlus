@@ -2,7 +2,7 @@
 Temel modeller
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, ForeignKey, Text, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, ForeignKey, Text, Numeric, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database.config import Base
@@ -130,7 +130,7 @@ class Sakin(Base):
     __tablename__ = "sakinler"
 
     id = Column(Integer, primary_key=True, index=True)
-    ad_soyad = Column(String(100), nullable=False)
+    ad_soyad = Column(String(100), nullable=False, index=True)  # Index: ad araması
     rutbe_unvan = Column(String(100))  # Rütbesi/Ünvanı
     telefon = Column(String(20))
     email = Column(String(100))
@@ -141,15 +141,20 @@ class Sakin(Base):
     notlar = Column(Text)  # Notlar
 
     # İlişkiler
-    daire_id = Column(Integer, ForeignKey("daireler.id"), nullable=True)
+    daire_id = Column(Integer, ForeignKey("daireler.id"), nullable=True, index=True)  # Index: daire araması
     daire = relationship("Daire", back_populates="sakini", foreign_keys="[Sakin.daire_id]")
     eski_daire_id = Column(Integer, ForeignKey("daireler.id"), nullable=True)  # Geçmiş daire
     eski_daire = relationship("Daire", foreign_keys="[Sakin.eski_daire_id]")  # Geçmiş daire ilişkisi
     aidatlar = relationship("Aidat", back_populates="sakin")
 
-    aktif = Column(Boolean, default=True)
+    aktif = Column(Boolean, default=True, index=True)  # Index: aktif/pasif filtreleme
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Composite index: ad_soyad + aktif (çok sık birlikte filtrelenir)
+    __table_args__ = (
+        Index('idx_sakinler_ad_aktif', 'ad_soyad', 'aktif'),
+    )
 
     @property
     def tam_ad(self) -> str:
@@ -172,7 +177,7 @@ class AidatIslem(Base):
     __tablename__ = "aidat_islemleri"
 
     id = Column(Integer, primary_key=True, index=True)
-    yil = Column(Integer, nullable=False)
+    yil = Column(Integer, nullable=False, index=True)  # Index: yıl araması
     ay = Column(Integer, nullable=False)  # 1-12
 
     # Aidat detayları
@@ -184,17 +189,24 @@ class AidatIslem(Base):
     ek_giderler = Column(Float, default=0.0)
 
     toplam_tutar = Column(Float, nullable=False)
-    son_odeme_tarihi = Column(DateTime, nullable=False)
+    son_odeme_tarihi = Column(DateTime, nullable=False, index=True)  # Index: tarih araması/sıralama
     aciklama = Column(Text)
-    aktif = Column(Boolean, default=True)
+    aktif = Column(Boolean, default=True, index=True)  # Index: aktif/pasif filtreleme
 
     # İlişkiler
-    daire_id = Column(Integer, ForeignKey("daireler.id"), nullable=False)
+    daire_id = Column(Integer, ForeignKey("daireler.id"), nullable=False, index=True)  # Index: daire araması
     daire = relationship("Daire", back_populates="aidat_islemleri")
     odemeler = relationship("AidatOdeme", back_populates="aidat_islem", cascade="all, delete-orphan")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Composite indexes: çok sık birlikte filtrelenen alanlar
+    __table_args__ = (
+        Index('idx_aidat_islem_daire_yil_ay', 'daire_id', 'yil', 'ay'),  # Daire-yıl-ay kombinasyonu
+        Index('idx_aidat_islem_yil_ay', 'yil', 'ay'),  # Genel yıl-ay araması
+        Index('idx_aidat_islem_tarih_aktif', 'son_odeme_tarihi', 'aktif'),  # Tarih + aktif filtresi
+    )
 
     @property
     def ay_adi(self) -> str:
@@ -337,29 +349,36 @@ class FinansIslem(Base):
     __tablename__ = "finans_islemleri"
 
     id = Column(Integer, primary_key=True, index=True)
-    tarih = Column(DateTime, nullable=False, default=func.now())
-    tur = Column(String(20), nullable=False)  # Gelir, Gider
+    tarih = Column(DateTime, nullable=False, default=func.now(), index=True)  # Index: tarih araması/sıralama
+    tur = Column(String(20), nullable=False, index=True)  # Gelir, Gider - Index: tür filtreleme
     tutar_kurus = Column(Integer, nullable=False)  # kuruş cinsinden
     aciklama = Column(Text)
-    aktif = Column(Boolean, default=True)
+    aktif = Column(Boolean, default=True, index=True)  # Index: aktif/pasif filtreleme
 
     # Belge alanları
     belge_yolu = Column(String(500), nullable=True)  # Belge dosya yolu
     belge_turu = Column(String(50), nullable=True)  # pdf, image, doc, vb.
 
     # İlişkiler
-    hesap_id = Column(Integer, ForeignKey("hesaplar.id"))
+    hesap_id = Column(Integer, ForeignKey("hesaplar.id"), index=True)  # Index: hesap araması
     hesap = relationship("Hesap", back_populates="finans_islemleri", foreign_keys=[hesap_id])
 
     hedef_hesap_id = Column(Integer, ForeignKey("hesaplar.id"), nullable=True)  # Transfer için hedef hesap
     hedef_hesap = relationship("Hesap", back_populates="hedef_finans_islemleri", foreign_keys=[hedef_hesap_id])
 
-    kategori_id = Column(Integer, ForeignKey("alt_kategoriler.id"), nullable=True)
+    kategori_id = Column(Integer, ForeignKey("alt_kategoriler.id"), nullable=True, index=True)  # Index: kategori araması
     kategori = relationship("AltKategori", back_populates="finans_islemleri")
     ana_kategori_text = Column(String(100))  # Ana kategori adı (kategori seçilmediğinde)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Composite indexes: çok sık birlikte filtrelenen alanlar
+    __table_args__ = (
+        Index('idx_finans_islem_tarih_tur', 'tarih', 'tur'),  # Tarih + tür kombinasyonu
+        Index('idx_finans_islem_hesap_tarih', 'hesap_id', 'tarih'),  # Hesap + tarih kombinasyonu
+        Index('idx_finans_islem_tur_aktif', 'tur', 'aktif'),  # Tür + aktif filtresi
+    )
 
     @property
     def tutar(self) -> float:

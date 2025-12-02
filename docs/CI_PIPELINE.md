@@ -100,13 +100,14 @@ testpaths = tests
 python_files = test_*.py
 python_classes = Test*
 python_functions = test_*
-addopts = -v --tb=short
+addopts = -v --tb=short --cov-fail-under=70
 ```
 
 **Coverage Raporlaması**:
 - XML format: `coverage.xml` (Codecov için)
 - HTML format: `htmlcov/` (yerel inceleme)
 - Terminal: stdout'a yazdırır
+- Minimum coverage: 70% (fail_under)
 
 #### 4. **Build Job**
 ```yaml
@@ -222,6 +223,9 @@ pytest tests/test_sakin_controller.py -v
 
 # Coverage raporu ile
 pytest tests/ --cov=. --cov-report=html
+
+# Minimum coverage ile test
+pytest tests/ --cov=. --cov-report=term-missing --cov-fail-under=70
 ```
 
 ### Coverage Raporu
@@ -351,6 +355,17 @@ def test_create_sakin():
 - **Utilities**: %80+
 - **Models**: %80+
 
+### 5. UI Testleri
+
+UI testleri için mock kullan:
+```python
+# tests/ui/test_lojman_panel.py
+def test_create_lojman_ui():
+    with patch('ui.lojman_panel.LojmanController') as mock_controller:
+        # Test UI interactions
+        pass
+```
+
 ---
 
 ## 🔗 İlişkili Dokümantasyon
@@ -358,6 +373,7 @@ def test_create_sakin():
 - [TODO.md](../TODO.md) - Geliştirme planı
 - [AGENTS.md](../AGENTS.md) - Kod stili rehberi
 - [pytest.ini](../pytest.ini) - Test konfigürasyonu
+- [TEST_STRATEGY.md](TEST_STRATEGY.md) - Test stratejisi
 
 ---
 
@@ -373,10 +389,11 @@ Coverage          | coverage    | ✅ Kurulu
 Build             | py_compile  | ✅ Kurulu
 Windows Tests     | pytest      | ✅ Kurulu
 CI Badges         | shields.io  | ✅ Kurulu
+Test Coverage     | pytest-cov  | ✅ 70%+ Hedef
 ```
 
 ---
 
 **Son Güncelleme**: 2 Aralık 2025  
-**Versiyon**: 1.0 (CI Pipeline Initial)  
+**Versiyon**: 1.1 (CI Pipeline v1.4 Updates)  
 **Yapımcı**: Aidat Plus Ekibi
