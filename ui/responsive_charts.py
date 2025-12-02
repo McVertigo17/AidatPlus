@@ -66,6 +66,7 @@ class ResponsiveChartManager:
     ) -> Tuple[float, float]:
         """
         Grafik türüne göre responsive figsize hesapla.
+        Scroll çubuğu olmayan responsive design için optimize edilmiş.
         
         Args:
             chart_type: Grafik türü ("trend", "pie", "bar", "default")
@@ -75,37 +76,45 @@ class ResponsiveChartManager:
             Tuple: (width, height) inç cinsinden
         """
         # Container genişliğine göre hesapla
-        # Grid layout'unda ~320px padding, 3px * colspan
-        effective_width = self.container_width - (20 + 6 * colspan)
+        # Padding: left 10px + right 10px + inner padding 6px * 2
+        effective_width = self.container_width - 32
         
-        # Maksimum genişlik sınırı koy
-        max_width = 1000
-        effective_width = min(effective_width, max_width)
-        effective_width = max(effective_width, 200)  # Minimum genişlik
+        # Grafik türüne göre grid kolonu sayısı belirle
+        if chart_type == "trend":
+            # Trend: 2 sütun (colspan=2)
+            available_width = effective_width  # Tüm genişlik
+        else:
+            # Pie/Bar: 1 sütun
+            available_width = (effective_width - 6) / 2  # 2 sütunlu grid, ortasında 6px boşluk
+        
+        # Maksimum/minimum genişlik
+        available_width = max(available_width, 200)
+        available_width = min(available_width, 800)  # Maksimum genişlik
         
         # Inç'e dönüştür (96 DPI varsayılan)
-        width_inch = effective_width / 96
+        width_inch = available_width / 96
         
         # Grafik türüne göre boyut hesapla
         if chart_type == "trend":
-            # Trend chart: Geniş ve dar (colspan=2)
+            # Trend chart: Çok geniş ve dar (colspan=2)
             height_inch = 2.8
-            width_inch = (width_inch * 2) - 0.5  # colspan için düzelt
+            # Genişliği optimize et
+            width_inch = min(width_inch, 10)  # Maksimum 10 inç
         elif chart_type == "pie":
             # Pie chart: Kare benzeri
-            size = min(width_inch * 0.8, 3.5)
+            size = min(width_inch, 3.2)
             height_inch = size * 0.9
             width_inch = size
         elif chart_type == "bar":
             # Bar chart: Orta yükseklik
             height_inch = 2.5
-            width_inch = min(width_inch, 4.5)
+            width_inch = min(width_inch, 4.2)
         else:  # default
             # Default: Standart boyut
             height_inch = 2.2
             width_inch = min(width_inch, 4)
         
-        # Minimum ve maksimum kontrol
+        # Minimum kontrol
         width_inch = max(width_inch, 1.5)
         height_inch = max(height_inch, 1.0)
         

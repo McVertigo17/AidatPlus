@@ -126,15 +126,15 @@ class DashboardPanel(BasePanel):
         """UI'yi oluştur
         
         Dashboard ana arayüzünü başlatır ve otomatik yenilemeyi başlatır.
+        Scroll çubuğu olmadan responsive frame'lerle otomatik boyutlandırma.
         """
-        # Ana container
+        # Ana container - responsive frame (scroll yok!)
         main_frame = ctk.CTkFrame(self.frame, fg_color=self.colors["background"])
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        main_frame.pack(fill="both", expand=True, padx=0, pady=0)
 
-        # Scroll frame
-        self.scroll_frame = ctk.CTkScrollableFrame(main_frame, fg_color=self.colors["background"])
-        self.scroll_frame.pack(fill="both", expand=True)
-
+        # Content frame - responsive (scroll frame değil)
+        self.scroll_frame = main_frame
+        
         # Responsive chart manager'ı başlat
         self.chart_manager = ResponsiveChartManager(self.scroll_frame)
         self.chart_builder = ResponsiveChartBuilder(self.chart_manager)
@@ -151,16 +151,17 @@ class DashboardPanel(BasePanel):
         """KPI kartlarını oluştur
         
         6 temel KPI kartı (Bakiye, Gelir, Gider, Net, Lojmanlar, Tahsilat) oluşturur.
+        Grid layout kullanarak responsive yerleştirme.
         
         Args:
             parent (ctk.CTkFrame): Kartları içerecek ana çerçeve
         """
         cards_frame = ctk.CTkFrame(parent, fg_color=self.colors["background"])
-        cards_frame.pack(fill="x", padx=10, pady=(5, 3))
+        cards_frame.pack(fill="x", padx=10, pady=(10, 5))
 
         # Başlık ve son güncelleme saati
         title_frame = ctk.CTkFrame(cards_frame, fg_color=self.colors["background"])
-        title_frame.pack(fill="x", pady=(0, 5))
+        title_frame.pack(fill="x", pady=(0, 10))
         
         title_label = ctk.CTkLabel(
             title_frame,
@@ -179,9 +180,9 @@ class DashboardPanel(BasePanel):
         )
         self.last_update_label.pack(anchor="e", side="right")
 
-        # KPI grid
+        # KPI grid - Grid layout ile responsive yerleştirme
         kpi_grid = ctk.CTkFrame(cards_frame, fg_color=self.colors["background"])
-        kpi_grid.pack(fill="x")
+        kpi_grid.pack(fill="both", expand=False)
 
         # KPI 1: Toplam Hesap Bakiyesi
         toplam_bakiye = self.get_toplam_bakiye()
@@ -291,12 +292,13 @@ class DashboardPanel(BasePanel):
         """Grafikleri oluştur
         
         3 temel grafik (Trend, Bakiye Dağılımı, Aidat Durum) oluşturur.
+        Grid layout ile responsive yerleştirme, scroll çubuğu yok.
         
         Args:
             parent (ctk.CTkFrame): Grafikleri içerecek ana çerçeve
         """
         charts_frame = ctk.CTkFrame(parent, fg_color=self.colors["background"])
-        charts_frame.pack(fill="both", expand=True, padx=10, pady=(3, 5))
+        charts_frame.pack(fill="both", expand=True, padx=10, pady=(5, 10))
 
         # Başlık
         title_label = ctk.CTkLabel(
@@ -305,9 +307,9 @@ class DashboardPanel(BasePanel):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=self.colors["primary"]
         )
-        title_label.pack(anchor="w", pady=(0, 5))
+        title_label.pack(anchor="w", pady=(0, 10))
 
-        # Grafikleri içeren grid
+        # Grafikleri içeren grid - Responsive grid layout
         charts_grid = ctk.CTkFrame(charts_frame, fg_color=self.colors["background"])
         charts_grid.pack(fill="both", expand=True)
 
