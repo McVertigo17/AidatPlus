@@ -722,9 +722,82 @@ new_sakin = self.sakin_controller.create(**new_sakin_data)  # ← Yeni kayıt
 
 ---
 
-**Son Güncelleme**: 2 Aralık 2025 (v1.4 Performans Optimizasyonu)  
-**Versiyon**: 1.4.1 (Veritabanı İndeksleme ve Optimization)  
-**Durum**: ✅ v1.1 Tamamlandı - ✅ v1.2 Tamamlandı (Docstring %90+) - ✅ v1.3 Tamamlandı (Sakin Silme Mantığı) - ✅ v1.4 Tamamlandı (Test Otomasyonu) - ✅ v1.4.1 Tamamlandı (Performans Optimizasyonu)
+**Son Güncelleme**: 2 Aralık 2025 (v1.4.2 Kullanıcı Geri Bildirimi)  
+**Versiyon**: 1.4.2 (UI/UX İyileştirmeleri)  
+**Durum**: ✅ v1.1 Tamamlandı - ✅ v1.2 Tamamlandı - ✅ v1.3 Tamamlandı - ✅ v1.4 Tamamlandı - ✅ v1.4.1 Tamamlandı (Performans) - ✅ v1.4.2 Tamamlandı (UI/UX)
+
+---
+
+## 📝 Değişim Geçmişi (v1.4.2)
+
+### Kullanıcı Geri Bildirimi ve Hız Algısı (UI/UX) ✅
+
+- ✅ **Loading Indicators Sistemi** (`ui/loading_indicator.py`)
+  - **LoadingSpinner**: Canvas tabanlı dönen animasyon
+    - `start()`: Spinner'ı başlat
+    - `stop()`: Spinner'ı durdur
+    - Özelleştirilebilir yarıçap ve renk
+  
+  - **LoadingDialog**: Modal loading dialog
+    - İşlem sırasında pencereyi kilitler
+    - Progress bar desteği (opsiyonel)
+    - Dinamik mesaj güncellemesi
+    - Otomatik kapanış
+  
+  - **ProgressIndicator**: Progress bar widget
+    - Başlık ve yüzde göstergesi
+    - `set_max()`: Maksimum değer
+    - `set_value()`: Mevcut değer
+    - `increment()`: Değeri artır
+  
+  - **Helper Fonksiyonlar**:
+    - `run_with_spinner()`: Spinner ile işlem çalıştır
+    - `run_with_progress()`: Progress bar ile işlem çalıştır
+    - Threading desteği (blocking değil)
+
+- ✅ **Toast Notification Sistemi** (`ui/toast_notification.py`)
+  - **Toast**: Kısa süreli bildirim widget
+    - 4 bildirim türü: success, error, warning, info
+    - Otomatik kayboluş (3-4 saniye)
+    - Renk kodlu göstergeler
+  
+  - **ToastManager**: Bildirim yöneticisi
+    - Birden fazla toast yönetimi
+    - 4 pozisyon: top-right, top-left, bottom-right, bottom-left
+    - Method'lar: `show_success()`, `show_error()`, `show_warning()`, `show_info()`
+    - `clear_all()`: Tüm toast'ları kaldır
+  
+  - **StatusBar**: Durum çubuğu
+    - Pencere altında gösterilir
+    - 5 durum türü: idle, busy, success, error, warning
+    - Otomatik saat gösterimi
+    - Renkli indicator nokta
+    - Method'lar: `set_idle()`, `set_busy()`, `set_success()`, `set_error()`
+
+- ✅ **Dokümantasyon**
+  - `docs/USER_FEEDBACK_INTEGRATION.md`: Kapsamlı rehber (300+ satır)
+    - Loading indicators detaylı açıklama
+    - Toast notifications kullanımı
+    - Status bar entegrasyonu
+    - 3 Uygulamada örnek
+    - Best practices ve kurallar
+    - Threading ve hata yönetimi
+
+### Teknik Detaylar ✅
+- Canvas tabanlı animasyon (hafif)
+- Modal dialog (pencere kilitleme)
+- Threading ile non-blocking işlemler
+- Türkçe destekli mesajlar
+- CustomTkinter entegrasyonu
+- RGBA renk desteği
+
+### Metrikleri Güncellemeleri
+- Python Satır Kodu: ~7600 → ~8400+ (+800 satır)
+- UI Components: 2 yeni modül (750+ satır)
+- Loading Components: 4 sınıf + 2 fonksiyon
+- Toast Components: 3 sınıf (Toast, ToastManager, StatusBar)
+- Dokümantasyon: USER_FEEDBACK_INTEGRATION.md (300+ satır)
+- Versiyon: 1.4.1 → 1.4.2
 
 ---
 

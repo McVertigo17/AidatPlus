@@ -38,8 +38,16 @@ Veritabanı erişimini ve uzun süren işlemlerdeki kullanıcı deneyimini iyile
   - Dokümantasyon: DATABASE_INDEXING_AND_OPTIMIZATION.md
 
 2. Kullanıcı Geri Bildirimi ve Hız Algısı (UI/UX)
-* [ ] Uzun işlemlerde (Raporlar, Yedekleme) "Loading/Spinner" göstergesi entegrasyonu.
-* [ ] İşlem sonrası "Toast" mesajları veya durum çubuğu bilgilendirmeleri.
+* [x] Uzun işlemlerde (Raporlar, Yedekleme) "Loading/Spinner" göstergesi entegrasyonu. (✅ TAMAMLANDI - v1.4.1)
+  - LoadingSpinner: Dönen animasyon
+  - LoadingDialog: Modal loading dialog
+  - ProgressIndicator: Progress bar
+  - Helper fonksiyonları (run_with_spinner, run_with_progress)
+
+* [x] İşlem sonrası "Toast" mesajları veya durum çubuğu bilgilendirmeleri. (✅ TAMAMLANDI - v1.4.1)
+  - Toast widget: Kısa süreli bildirim
+  - ToastManager: Bildirim yönetimi (4 tür: success, error, warning, info)
+  - StatusBar: Durum çubuğu (5 durum türü)
 
 3. UI Responsive Düzenlemeler
 * [ ] Ana pencere ve modalların ekran boyutuna göre dinamik boyutlanması.
@@ -95,4 +103,6 @@ IV. Proje İstatistikleri
 | Pagination/Lazy Load | ✅ Tamamlandı | %98 Memory Azalt | ✅ Tamamlandı |
 | Query Optimization | ✅ Tamamlandı | N+1 Problem Çöz | ✅ Tamamlandı |
 | Performans Opt. | ✅ Tamamlandı | %80 Hız Artışı | ✅ Tamamlandı |
+| User Feedback (Loading) | ✅ Tamamlandı | Spinner + Dialog | ✅ Tamamlandı |
+| User Feedback (Toast) | ✅ Tamamlandı | Toast + Status Bar | ✅ Tamamlandı |
 | Raporlama POC | Planlandı | HTML Önizleme | ⏳ Beklemede |
