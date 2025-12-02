@@ -88,9 +88,9 @@ class AidatPlusApp:
         # Responsive pencere yöneticisini başlat
         self.responsive_manager = ResponsiveWindow(self.root)
         
-        # Konfigürasyondan pencere boyutlarını al
-        window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1600)
-        window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 900)
+        # Konfigürasyondan pencere boyutlarını al (fallback: 1600x900)
+        window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1600) or 1600
+        window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 900) or 900
         
         # ⚠️ Pencere boyutu kısıtlamalarını AYARLAMA (sabit boyut olduğu için gerekli değil)
         # Sadece pencere konumlandırması yapılıyor
