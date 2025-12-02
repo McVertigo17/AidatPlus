@@ -29,23 +29,27 @@ class ResponsiveChartManager:
         
         Args:
             container: Grafikleri içerecek container frame
+        
+        Note:
+            ⚠️ Resize event dinleme KAPALI - ana pencere sabit boyutta
+            Container boyutu sabit kaldığı için, resize event'leri dinlemeye gerek yok
         """
         self.container = container
         self.logger = logging.getLogger(self.__class__.__name__)
         
-        # Container'ın boyutunu al
+        # Container'ın boyutunu al (sabit kalacak)
         self.container_width = container.winfo_width() or 800
         self.container_height = container.winfo_height() or 600
         
-        # Debounce mekanizması - resize işlemi
+        # ⚠️ Debounce mekanizması KAPALI (pencere sabit olduğu için gereksiz)
         self._resize_timer = None
-        self._resize_debounce_ms = 500  # 500ms istikrar süresi
+        self._resize_debounce_ms = 500  # Kullanılmıyor
         
-        # Bind'i ayarlayarak resize'ı dinle
-        self.container.bind("<Configure>", self._on_container_resize)
+        # ⚠️ Resize event dinleme KAPALI (pencere boyutu sabit)
+        # self.container.bind("<Configure>", self._on_container_resize)
         
         self.logger.debug(
-            f"ResponsiveChartManager initialized: "
+            f"ResponsiveChartManager initialized (Fixed size): "
             f"{self.container_width}x{self.container_height}"
         )
     

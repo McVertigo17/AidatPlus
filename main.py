@@ -83,7 +83,7 @@ class AidatPlusApp:
         # Ana pencere
         self.root = ctk.CTk()
         self.root.title("Aidat Plus - Lojman Yönetim Sistemi")
-        self.root.resizable(True, True)  # Responsive desteği için resizable=True
+        self.root.resizable(False, False)  # ⚠️ Pencere boyutlandırma KAPALI (sabit boyut)
         
         # Responsive pencere yöneticisini başlat
         self.responsive_manager = ResponsiveWindow(self.root)
@@ -92,17 +92,12 @@ class AidatPlusApp:
         window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1300)
         window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 785)
         
-        # Pencere boyutu kısıtlamalarını ayarla (minimal/maksimal)
-        self.responsive_manager.set_window_size_constraints(
-            min_width=1000,
-            min_height=700,
-            max_width=None,  # Ekran genişliğine kadar
-            max_height=None  # Ekran yüksekliğine kadar
-        )
+        # ⚠️ Pencere boyutu kısıtlamalarını AYARLAMA (sabit boyut olduğu için gerekli değil)
+        # Sadece pencere konumlandırması yapılıyor
         
         # Ana pencereyi ekranın üst-ortasında konumlandır
         self.responsive_manager.center_window(window_width, window_height)
-        logger.debug(f"Window geometry: {window_width}x{window_height} (Responsive enabled)")
+        logger.debug(f"Window geometry: {window_width}x{window_height} (Fixed size, no resizing)")
 
         # Icon ayarı (varsa)
         try:

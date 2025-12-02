@@ -14,10 +14,12 @@ Veritabanı erişimini ve uzun süren işlemlerdeki kullanıcı deneyimini iyile
 * [x] ResponsiveChartManager debounce mekanizması ekle (✅ TAMAMLANDI - v1.5.3)
   - Resize event'leri sürekli tetikleniyor (ana pencere büyüyüp küçüldüğünde)
   - Boyut hesaplamaları her resize'da yapılıyor → işlemci yüksek kullanımı
-  - Çözüm: 500ms debounce mekanizması (istikrar süresi) ekle
-  - Timer sistemle önceki event'ler iptal ediliyor
-  - Sadece pencere boyutu sabitlendiğinde hesaplamalar yapılacak
-  - Performance impact: %60-80 azalacak (CPU, memory)
+  - ~~Çözüm: 500ms debounce mekanizması (istikrar süresi) ekle~~ (v1.5.3-alpha)
+  - ✅ Final Çözüm: Pencereyi tamamen sabit boyuta koy (resizable=False)
+  - main.py: resizable(False, False) - Pencere büyütüp küçültülemez
+  - responsive_charts.py: Resize event dinleme kapalı
+  - Performance impact: %100 CPU yükü kaynağı kaldırıldı
+  - Uygulama başlangıçta 1300x785 sabit boyutta, tüm ekranı işgal etmez
 
 1. Veritabanı İndeksleme ve Optimizasyon (Zorunlu)
 * [x] sakinler tablosunda isim ve daire aramaları için index eklenmeli. (✅ TAMAMLANDI - v1.4)
