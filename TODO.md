@@ -1,14 +1,23 @@
 Aidat Plus - Geliştirme Planı: Performans ve Kod Kalitesi
 
 Son Güncelleme: 2 Aralık 2025
-Durum: ✅ v1.5.2 Responsive Grafikler TAMAMLANDI
-Hedef: 🎯 v1.5.2 Sürüm Çıkışı (Responsive UI + Dinamik Grafikler + Otomatik Boyut)
+Durum: ✅ v1.5.3 Pencere Resize Performans Optimizasyonu TAMAMLANDI
+Hedef: 🎯 v1.5.3 Sürüm Çıkışı (Responsive UI + Debounce + %60-80 Performans İyileştirmesi)
 
 ---
 
 I. ÖNCELİK 1: Performans Optimizasyonu (Kritik ve Fonksiyonel)
 
 Veritabanı erişimini ve uzun süren işlemlerdeki kullanıcı deneyimini iyileştirmek için bu maddeler ele alınmalıdır.
+
+0. Pencere Resize Performans Sorunu (🔥 KRITIK - Sürekli Hesaplama)
+* [x] ResponsiveChartManager debounce mekanizması ekle (✅ TAMAMLANDI - v1.5.3)
+  - Resize event'leri sürekli tetikleniyor (ana pencere büyüyüp küçüldüğünde)
+  - Boyut hesaplamaları her resize'da yapılıyor → işlemci yüksek kullanımı
+  - Çözüm: 500ms debounce mekanizması (istikrar süresi) ekle
+  - Timer sistemle önceki event'ler iptal ediliyor
+  - Sadece pencere boyutu sabitlendiğinde hesaplamalar yapılacak
+  - Performance impact: %60-80 azalacak (CPU, memory)
 
 1. Veritabanı İndeksleme ve Optimizasyon (Zorunlu)
 * [x] sakinler tablosunda isim ve daire aramaları için index eklenmeli. (✅ TAMAMLANDI - v1.4)

@@ -55,6 +55,10 @@ class DashboardPanel(BasePanel):
         self.chart_manager: Optional[ResponsiveChartManager] = None
         self.chart_builder: Optional[ResponsiveChartBuilder] = None
         
+        # Önceki pencere boyutunu sakla (pencere resize'ında overkill refresh'i önle)
+        self._last_window_width = 0
+        self._last_window_height = 0
+        
         super().__init__(parent, "📊 Dashboard", colors)
 
     def load_data(self) -> None:
@@ -100,18 +104,11 @@ class DashboardPanel(BasePanel):
         """Otomatik yenileme başlat
         
         Dashboard'u belirli aralıklarla yenilemek için periyodik görev başlatır.
+        ⚠️ Not: Otomatik refresh kapalı - performans nedeniyle manuel yenileme tercih edilir
         """
-        def refresh_loop() -> None:
-            try:
-                self.refresh_dashboard()
-            except Exception as e:
-                print(f"Dashboard yenileme hatası: {e}")
-            
-            # Sonraki yenilemeyi planla
-            self.refresh_job = self.frame.after(self.refresh_interval, refresh_loop)
-        
-        # İlk yenilemeyi başlat
-        self.refresh_job = self.frame.after(self.refresh_interval, refresh_loop)
+        # ⚠️ Otomatik refresh devre dışı - performans nedeniyle
+        # Kullanıcı F5 veya manuel yenileme buttonuyla yenileyebilir
+        pass
     
     def stop_auto_refresh(self) -> None:
         """Otomatik yenilemeyi durdur
@@ -355,7 +352,7 @@ class DashboardPanel(BasePanel):
 
         # Responsive grafik oluştur
         try:
-            if self.chart_builder:
+            if self.chart_builder and self.chart_manager:
                 fig = self.chart_builder.create_responsive_line_chart(
                     x_data=aylar,
                     y_data_dict={
@@ -425,7 +422,7 @@ class DashboardPanel(BasePanel):
 
         # Responsive grafik oluştur
         try:
-            if self.chart_builder:
+            if self.chart_builder and self.chart_manager:
                 colors_list = ['#28A745', '#0055A4', '#FFC107', '#DC3545', '#17A2B8']
                 fig = self.chart_builder.create_responsive_pie_chart(
                     sizes=bakiyeler,
@@ -491,7 +488,7 @@ class DashboardPanel(BasePanel):
 
         # Responsive grafik oluştur
         try:
-            if self.chart_builder:
+            if self.chart_builder and self.chart_manager:
                 labels = ['Ödenen', 'Ödenmemiş']
                 sizes = [odenen, odenmeyen]
                 colors_list = ['#28A745', '#DC3545']

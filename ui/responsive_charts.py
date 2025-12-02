@@ -18,6 +18,9 @@ class ResponsiveChartManager:
     
     Matplotlib figürlerin pencere boyutuna göre dinamik boyutlandırılmasını sağlar.
     DPI ayarlamaları ve figsize hesaplamaları otomatik yapılır.
+    
+    Pencere resize'ı debounce mekanizmasıyla dinlenir ve istikrar kazandığında
+    hesaplamalar yapılır (sürekli hesaplama yapılmaz).
     """
     
     def __init__(self, container: ctk.CTkFrame) -> None:
@@ -34,6 +37,10 @@ class ResponsiveChartManager:
         self.container_width = container.winfo_width() or 800
         self.container_height = container.winfo_height() or 600
         
+        # Debounce mekanizması - resize işlemi
+        self._resize_timer = None
+        self._resize_debounce_ms = 500  # 500ms istikrar süresi
+        
         # Bind'i ayarlayarak resize'ı dinle
         self.container.bind("<Configure>", self._on_container_resize)
         
@@ -44,20 +51,44 @@ class ResponsiveChartManager:
     
     def _on_container_resize(self, event: Any) -> None:
         """
-        Container resize event'ini işle.
+        Container resize event'ini işle (debounced).
+        
+        Pencere boyutu değiştiğinde, istikrarlı boyuta ulaştığında (500ms)
+        hesaplamalar yapılır. Sürekli resize sırasında hiçbir işlem yapılmaz.
         
         Args:
             event: Configure event
         """
         try:
-            self.container_width = event.width
-            self.container_height = event.height
+            # Önceki timer'ı iptal et (yeni resize event geliyor)
+            if self._resize_timer is not None:
+                self.container.after_cancel(self._resize_timer)
             
-            self.logger.debug(
-                f"Container resized: {self.container_width}x{self.container_height}"
+            # Yeni timer ayarla - istikrar süresi içinde pencere yeniden resize olmazsa
+            self._resize_timer = self.container.after(
+                self._resize_debounce_ms,
+                lambda: self._apply_resize_changes(event.width, event.height)
             )
         except Exception as e:
             self.logger.error(f"Container resize error: {str(e)}")
+    
+    def _apply_resize_changes(self, width: int, height: int) -> None:
+        """
+        Resize değişikliklerini uygula (debounce sonrası).
+        
+        Bu metod sadece pencere boyutu istikrarlı hale geldikten sonra çağırılır.
+        
+        Args:
+            width: Yeni genişlik (piksel)
+            height: Yeni yükseklik (piksel)
+        """
+        self.container_width = width
+        self.container_height = height
+        self._resize_timer = None
+        
+        self.logger.debug(
+            f"Container resized (stable): {self.container_width}x{self.container_height}"
+        )
     
     def calculate_chart_figsize(
         self,
