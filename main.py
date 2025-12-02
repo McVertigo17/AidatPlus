@@ -17,6 +17,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Configuration Manager'ı başlat
 from configuration import ConfigurationManager, ConfigKeys
 from utils.logger import AidatPlusLogger
+from ui.responsive import ResponsiveWindow
 
 config_mgr = ConfigurationManager.get_instance()
 
@@ -82,17 +83,26 @@ class AidatPlusApp:
         # Ana pencere
         self.root = ctk.CTk()
         self.root.title("Aidat Plus - Lojman Yönetim Sistemi")
-        self.root.resizable(False, False)
+        self.root.resizable(True, True)  # Responsive desteği için resizable=True
         
-        # Ana pencereyi ekranın üst-ortasında konumlandır
+        # Responsive pencere yöneticisini başlat
+        self.responsive_manager = ResponsiveWindow(self.root)
+        
         # Konfigürasyondan pencere boyutlarını al
         window_width = self.config.get(ConfigKeys.UI_DEFAULT_WIDTH, 1300)
         window_height = self.config.get(ConfigKeys.UI_DEFAULT_HEIGHT, 785)
-        screen_width = self.root.winfo_screenwidth()
-        x = (screen_width - window_width) // 2
-        y = 0
-        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        logger.debug(f"Window geometry: {window_width}x{window_height}")
+        
+        # Pencere boyutu kısıtlamalarını ayarla (minimal/maksimal)
+        self.responsive_manager.set_window_size_constraints(
+            min_width=1000,
+            min_height=700,
+            max_width=None,  # Ekran genişliğine kadar
+            max_height=None  # Ekran yüksekliğine kadar
+        )
+        
+        # Ana pencereyi ekranın üst-ortasında konumlandır
+        self.responsive_manager.center_window(window_width, window_height)
+        logger.debug(f"Window geometry: {window_width}x{window_height} (Responsive enabled)")
 
         # Icon ayarı (varsa)
         try:
@@ -569,19 +579,19 @@ class AidatPlusApp:
         temp_label.pack(expand=True)
 
     def center_window(self, window: ctk.CTkToplevel, width: int, height: int) -> None:
-        """Yeni pencereyi ana pencerenin üstünden 2cm aşağıdan başlayacak şekilde konumlandır"""
-        # Ana pencere konumunu ve boyutunu al
-        root_x = self.root.winfo_x()
-        root_y = self.root.winfo_y()
-        root_width = self.root.winfo_width()
+        """
+        Yeni pencereyi ana pencerenin üstünden 2cm aşağıdan başlayacak şekilde konumlandır.
         
-        # Yeni pencerenin konumunu hesapla
-        # X: ana pencerenin merkezi
-        x = root_x + (root_width - width) // 2
-        # Y: ana pencerenin üstünden 75 piksel (≈2cm) aşağı
-        y = root_y + 75
+        Responsive Window Manager'ı kullanarak ekran boyutuna göre otomatik ayarlanır.
         
-        window.geometry(f"{width}x{height}+{x}+{y}")
+        Args:
+            window: Alt penceresi (CTkToplevel)
+            width: Pencere genişliği (piksel)
+            height: Pencere yüksekliği (piksel)
+        """
+        self.responsive_manager.center_relative_to_parent(
+            window, width, height, offset_y=75
+        )
 
     def close_panel(self, panel_name: str, window: ctk.CTkToplevel) -> None:
         """Paneli kapat"""

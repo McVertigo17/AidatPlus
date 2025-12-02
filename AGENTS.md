@@ -728,6 +728,77 @@ new_sakin = self.sakin_controller.create(**new_sakin_data)  # ← Yeni kayıt
 
 ---
 
+## 📝 Değişim Geçmişi (v1.5)
+
+### UI Responsive Düzenlemeler ✅
+
+- ✅ **Responsive UI Sistemi** (5 sınıf + yardımcı fonksiyonlar)
+  - **ResponsiveFrame**: Minimum/maksimum boyut kısıtlamaları
+    - `min_width`, `min_height`, `max_width`, `max_height` özellikleri
+    - Otomatik resize event dinleme
+    - Dinamik boyutlandırma
+  
+  - **ScrollableFrame**: CustomTkinter ScrollableFrame iyileştirmesi
+    - `reset_scrollbar()`: Scroll çubuğunu sıfırla
+    - `scroll_to_widget(widget)`: Belirli widget'a scroll et
+    - Otomatik scroll çubuğu göster/gizle
+  
+  - **ResponsiveWindow**: Pencere yönetim sistemi
+    - `set_window_size_constraints()`: Min/max boyut sınırları
+    - `center_window(width, height)`: Pencereyi ekrana ortala
+    - `center_relative_to_parent()`: Alt pencereyi ana pencereye göre ortala
+    - `get_window_size()`, `get_window_position()`: Pencere bilgileri
+    - `is_fullscreen()`: Fullscreen durumu kontrol
+  
+  - **AdaptiveLayout**: Breakpoint bazlı layout yönetimi
+    - Tablet/Desktop breakpoint'leri
+    - Dikey/Yatay layout otomatik değişimi
+    - Özelleştirilebilir breakpoint'ler
+  
+  - **ResponsiveDialog**: Modal dialog responsive desteği
+    - Ekran boyutuna uyum sağlama
+    - Min/max boyut kısıtlamaları
+    - Otomatik konumlandırma
+  
+  - **Yardımcı Fonksiyonlar**:
+    - `calculate_responsive_padding()`: Dinamik padding
+    - `calculate_responsive_font_size()`: Dinamik font boyutu
+    - `get_responsive_breakpoints()`: Breakpoint'ler
+
+- ✅ **Main.py Entegrasyonu**
+  - ResponsiveWindow manager'ı başlatılıyor
+  - Pencere boyutu kısıtlamaları: min 1000x700, max ekran boyutu
+  - Dinamik pencere konumlandırması
+  - Panel pencerelerinin responsive konumlandırması
+  - Resizable=True (önceden sabitdi)
+
+- ✅ **BasePanel Güncellemesi**
+  - ResponsiveFrame ile panel oluşturma
+  - Minimum boyut garantisi (400x300)
+  - Colors parametresi opsiyonel hale geldi
+  - Type hints iyileştirmesi
+
+- ✅ **Dokümantasyon**
+  - `docs/UI_RESPONSIVE_DESIGN.md`: 250+ satır kapsamlı rehber
+    - 5 sınıfın detaylı açıklaması
+    - Konfigürasyon örnekleri
+    - Best practices rehberi
+    - Test senaryoları
+    - Breakpoint'ler tablosu
+    - FAQ bölümü
+
+### Metrikleri Güncellemeleri
+- Python Satır Kodu: ~8400 → ~9200+ (+800 satır)
+- UI Responsive Module: 450+ satır (responsive.py)
+- Dokümantasyon: +250 satır (UI_RESPONSIVE_DESIGN.md)
+- CSS-like Breakpoint'ler: 5 seviye (Mobile/Tablet/Desktop/etc)
+- Responsive Sınıfları: 5 ana sınıf + 2 helper fonksiyon
+- Main.py Güncellemesi: ResponsiveWindow entegrasyonu
+- BasePanel Güncellemesi: ResponsiveFrame kullanımı
+- Versiyon: 1.4.2 → 1.5
+
+---
+
 ## 📝 Değişim Geçmişi (v1.4.2)
 
 ### Kullanıcı Geri Bildirimi ve Hız Algısı (UI/UX) ✅

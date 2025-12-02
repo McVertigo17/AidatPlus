@@ -1,8 +1,8 @@
 Aidat Plus - Geliştirme Planı: Performans ve Kod Kalitesi
 
 Son Güncelleme: 2 Aralık 2025
-Durum: 🔄 Performans ve Kod Düzenlemeleri DEVAM EDİYOR
-Hedef: 🎯 v1.4 Sürüm Çıkışı (Performans Optimizasyonu ve Kararlı UI)
+Durum: ✅ v1.5 UI Responsive Düzenlemeleri TAMAMLANDI
+Hedef: 🎯 v1.5 Sürüm Çıkışı (Responsive UI ve Dinamik Boyutlandırma)
 
 ---
 
@@ -49,9 +49,17 @@ Veritabanı erişimini ve uzun süren işlemlerdeki kullanıcı deneyimini iyile
   - ToastManager: Bildirim yönetimi (4 tür: success, error, warning, info)
   - StatusBar: Durum çubuğu (5 durum türü)
 
-3. UI Responsive Düzenlemeler
-* [ ] Ana pencere ve modalların ekran boyutuna göre dinamik boyutlanması.
-* [ ] Scrollable frame'lerin içerik dolduğunda doğru davranması.
+3. UI Responsive Düzenlemeler (✅ TAMAMLANDI - v1.5)
+* [x] Ana pencere ve modalların ekran boyutuna göre dinamik boyutlanması.
+  - ResponsiveWindow sınıfı: Pencere boyut kısıtlamaları (min/max)
+  - ResponsiveDialog sınıfı: Modal dialog'lar ekran boyutuna uyum sağlıyor
+  - center_window() ve center_relative_to_parent() metodları
+  - Breakpoint'ler: Mobile/Tablet/Desktop/LargeDesktop
+* [x] Scrollable frame'lerin içerik dolduğunda doğru davranması.
+  - ScrollableFrame sınıfı: CustomTkinter ScrollableFrame iyileştirmesi
+  - reset_scrollbar() metodu: Scroll çubuğunu sıfırla
+  - scroll_to_widget() metodu: Belirli widget'a scroll et
+  - ResponsiveFrame sınıfı: Min/max boyut kısıtlamaları
 
 ---
 
@@ -105,4 +113,5 @@ IV. Proje İstatistikleri
 | Performans Opt. | ✅ Tamamlandı | %80 Hız Artışı | ✅ Tamamlandı |
 | User Feedback (Loading) | ✅ Tamamlandı | Spinner + Dialog | ✅ Tamamlandı |
 | User Feedback (Toast) | ✅ Tamamlandı | Toast + Status Bar | ✅ Tamamlandı |
+| UI Responsive Design | ✅ Tamamlandı | Dinamik Boyutlandırma | ✅ Tamamlandı |
 | Raporlama POC | Planlandı | HTML Önizleme | ⏳ Beklemede |

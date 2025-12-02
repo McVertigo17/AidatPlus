@@ -1,19 +1,20 @@
 """
-Temel panel sınıfı
+Temel panel sınıfı - Responsive destek ile
 """
 
 import customtkinter as ctk
 from typing import TYPE_CHECKING, Any, Optional
 
 from utils.logger import get_logger
+from ui.responsive import ScrollableFrame, ResponsiveFrame
 
 if TYPE_CHECKING:
     from main import COLORS
 
 class BasePanel:
-    """Temel panel sınıfı"""
+    """Temel panel sınıfı - Responsive özellikler ile"""
 
-    def __init__(self, parent: Any, title: str, colors: dict) -> None:
+    def __init__(self, parent: Any, title: str = "", colors: Optional[dict] = None) -> None:
         """
         Temel panel'i başlat.
         
@@ -24,12 +25,17 @@ class BasePanel:
         """
         self.parent = parent
         self.title = title
-        self.colors = colors
+        self.colors = colors or {"background": "transparent"}
         self.logger = get_logger(self.__class__.__name__)
         self.logger.debug(f"Initializing panel: {title}")
 
-        # Ana frame
-        self.frame = ctk.CTkFrame(parent, fg_color=self.colors["background"])
+        # Ana frame - responsive
+        self.frame = ResponsiveFrame(
+            parent,
+            fg_color=self.colors.get("background", "transparent"),
+            min_width=400,
+            min_height=300
+        )
         self.frame.pack(fill="both", expand=True, padx=0, pady=0)
 
         self.setup_ui()
