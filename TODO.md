@@ -1,8 +1,8 @@
 Aidat Plus - Geliştirme Planı: Performans ve Kod Kalitesi
 
 Son Güncelleme: 2 Aralık 2025
-Durum: ✅ v1.5 UI Responsive Düzenlemeleri TAMAMLANDI
-Hedef: 🎯 v1.5 Sürüm Çıkışı (Responsive UI ve Dinamik Boyutlandırma)
+Durum: ✅ v1.5.2 Responsive Grafikler TAMAMLANDI
+Hedef: 🎯 v1.5.2 Sürüm Çıkışı (Responsive UI + Dinamik Grafikler + Otomatik Boyut)
 
 ---
 
@@ -49,17 +49,25 @@ Veritabanı erişimini ve uzun süren işlemlerdeki kullanıcı deneyimini iyile
   - ToastManager: Bildirim yönetimi (4 tür: success, error, warning, info)
   - StatusBar: Durum çubuğu (5 durum türü)
 
-3. UI Responsive Düzenlemeler (✅ TAMAMLANDI - v1.5)
+3. UI Responsive Düzenlemeler (✅ TAMAMLANDI - v1.5.2)
 * [x] Ana pencere ve modalların ekran boyutuna göre dinamik boyutlanması.
   - ResponsiveWindow sınıfı: Pencere boyut kısıtlamaları (min/max)
   - ResponsiveDialog sınıfı: Modal dialog'lar ekran boyutuna uyum sağlıyor
   - center_window() ve center_relative_to_parent() metodları
   - Breakpoint'ler: Mobile/Tablet/Desktop/LargeDesktop
 * [x] Scrollable frame'lerin içerik dolduğunda doğru davranması.
-  - ScrollableFrame sınıfı: CustomTkinter ScrollableFrame iyileştirmesi
-  - reset_scrollbar() metodu: Scroll çubuğunu sıfırla
-  - scroll_to_widget() metodu: Belirli widget'a scroll et
-  - ResponsiveFrame sınıfı: Min/max boyut kısıtlamaları
+  - ResponsiveChartManager: Pencere resize'ı otomatik izle
+  - Scroll çubuğu kaldırıldı (normal frame kullanılıyor)
+  - Grafikler pencereye otomatik uyum sağlıyor
+  - ResponsiveChartBuilder: Responsive matplotlib grafikleri
+
+* [x] Dashboard grafikleri - Responsive boyutlandırma (v1.5.1 - v1.5.2)
+  - ResponsiveChartManager: Figsize ve DPI hesaplaması
+  - ResponsiveChartBuilder: Grafik oluşturma
+  - create_responsive_line_chart() - Çizgi grafik
+  - create_responsive_pie_chart() - Pasta grafik
+  - create_responsive_bar_chart() - Bar grafik
+  - Scroll çubuğu kaldırıldı, otomatik boyutlandırma
 
 ---
 
@@ -114,4 +122,5 @@ IV. Proje İstatistikleri
 | User Feedback (Loading) | ✅ Tamamlandı | Spinner + Dialog | ✅ Tamamlandı |
 | User Feedback (Toast) | ✅ Tamamlandı | Toast + Status Bar | ✅ Tamamlandı |
 | UI Responsive Design | ✅ Tamamlandı | Dinamik Boyutlandırma | ✅ Tamamlandı |
+| Responsive Grafikler | ✅ Tamamlandı | Scroll yok, Otomatik Boyut | ✅ Tamamlandı |
 | Raporlama POC | Planlandı | HTML Önizleme | ⏳ Beklemede |
