@@ -81,6 +81,10 @@ class RaporlarPanel(BasePanel):
         self.tabview.add("İcmal")
         self.tabview.add("Konut Mali Durumları")
         self.tabview.add("Boş Konut Listesi")
+        # Removed unwanted tabs:
+        # self.tabview.add("Kategori Dağılımı")
+        # self.tabview.add("Aylık Özet")
+        # self.tabview.add("Trend Analizi")
 
         # Tab içeriklerini oluştur
         self.setup_tum_islem_detaylari_tab()
@@ -88,9 +92,12 @@ class RaporlarPanel(BasePanel):
         self.setup_icmal_tab()
         self.setup_konut_mali_durumlari_tab()
         self.setup_bos_konut_listesi_tab()
+        # Removed setup methods for unwanted tabs:
+        # self.setup_kategori_dagilimi_tab()
+        # self.setup_aylik_ozet_tab()
+        # self.setup_trend_analizi_tab()
 
     def setup_tum_islem_detaylari_tab(self) -> None:
-
         """Tüm İşlem Detayları tab'ı - Dönemsel filtreleme ile"""
         tab = self.tabview.tab("Tüm İşlem Detayları")
 
@@ -1040,6 +1047,13 @@ class RaporlarPanel(BasePanel):
         self.konut_mali_ay_combo.set(aylar[datetime.now().month - 1])
         self.konut_mali_ay_combo.configure(state="normal")
         self.load_konut_mali_durumlari()
+
+    def uygula_tarih_filtresi(self, tarih: datetime, filtre_tur: str, yil: int, ay: int) -> bool:
+        """Tarih filtresi uygula"""
+        if filtre_tur == "Yıllık":
+            return tarih.year == yil
+        else:  # Aylık
+            return tarih.year == yil and tarih.month == ay
 
     def setup_bos_konut_listesi_tab(self) -> None:
         """Boş Konut Maliyet Analizi tab'ı"""
@@ -2127,3 +2141,355 @@ class RaporlarPanel(BasePanel):
             
         except Exception as e:
             self.show_error(f"Boş konut listesi yüklenirken hata oluştu: {str(e)}")
+
+    # Removed setup_kategori_dagilimi_tab method
+    # Removed load_kategori_dagilimi method
+    # Removed setup_aylik_ozet_tab method
+
+    def setup_aylik_ozet_filtreleme_paneli(self, parent: ctk.CTkFrame) -> None:
+        """Aylık Özet sekmesi için filtreleme paneli"""
+        filter_frame = ctk.CTkFrame(
+            parent,
+            fg_color=self.colors["background"],
+            border_width=1,
+            border_color=self.colors["primary"]
+        )
+        filter_frame.pack(fill="x", padx=0, pady=(0, 0))
+        
+        # Başlık
+        filter_title = ctk.CTkLabel(
+            filter_frame,
+            text="Filtre",
+            font=ctk.CTkFont(size=9, weight="bold"),
+            text_color=self.colors["primary"]
+        )
+        filter_title.pack(anchor="w", padx=8, pady=(3, 3))
+        
+        # Filtre container
+        filter_content = ctk.CTkFrame(filter_frame, fg_color=self.colors["background"])
+        filter_content.pack(fill="x", padx=8, pady=(0, 5))
+        
+        from datetime import datetime
+        
+        # Yıl seçimi
+        yil_label = ctk.CTkLabel(
+            filter_content,
+            text="Yıl:",
+            font=ctk.CTkFont(size=8),
+            text_color=self.colors["text"]
+        )
+        yil_label.pack(side="left", padx=(0, 5))
+        
+        # Veritabanından kullanılabilir yılları al
+        yillar = self.get_veritabani_yillari()
+        
+        self.aylik_ozet_yil_combo = ctk.CTkComboBox(
+            filter_content,
+            values=yillar,
+            command=self.on_aylik_ozet_yil_change,
+            width=65,
+            height=24,
+            button_color=self.colors["primary"],
+            button_hover_color=self.colors["success"],
+            dropdown_font=ctk.CTkFont(size=8)
+        )
+        
+        # En yeni yılı seç
+        if yillar:
+            self.aylik_ozet_yil_combo.set(yillar[-1])
+        else:
+            self.aylik_ozet_yil_combo.set(str(datetime.now().year))
+        
+        self.aylik_ozet_yil_combo.pack(side="left", padx=(0, 15))
+        
+        # Temizle butonu
+        temizle_btn = ctk.CTkButton(
+            filter_content,
+            text="Temizle",
+            command=self.temizle_aylik_ozet_filtreleri,
+            fg_color=self.colors["primary"],
+            hover_color=self.colors["success"],
+            text_color="white",
+            font=ctk.CTkFont(size=8, weight="bold"),
+            height=24,
+            width=60,
+            corner_radius=3
+        )
+        temizle_btn.pack(side="left", padx=(0, 0))
+
+    def on_aylik_ozet_yil_change(self, value: str) -> None:
+        """Yıl değiştiğinde verileri yenile"""
+        self.load_aylik_ozet()
+
+    def temizle_aylik_ozet_filtreleri(self) -> None:
+        """Aylık Özet filtreleri temizle"""
+        from datetime import datetime
+        yillar = self.get_veritabani_yillari()
+        if yillar:
+            self.aylik_ozet_yil_combo.set(yillar[-1])
+        else:
+            self.aylik_ozet_yil_combo.set(str(datetime.now().year))
+        self.load_aylik_ozet()
+
+    def load_aylik_ozet(self) -> None:
+        """Aylık özet verilerini yükle ve grafikleri oluştur"""
+        try:
+            # Filtre parametrelerini al
+            from datetime import datetime
+            
+            if not hasattr(self, 'aylik_ozet_yil_combo') or self.aylik_ozet_yil_combo is None:
+                yil = datetime.now().year
+            else:
+                yil = int(self.aylik_ozet_yil_combo.get())
+            
+            # Tüm işlemleri al
+            gelirler = self.finans_controller.get_gelirler()
+            giderler = self.finans_controller.get_giderler()
+            
+            # Aylık verileri hazırla
+            aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
+                    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+            
+            # Aylık toplamlar
+            aylik_gelirler = [0.0] * 12
+            aylik_giderler = [0.0] * 12
+            
+            # Gelirleri aylık olarak grupla
+            for gelir in gelirler:
+                if gelir.tarih and gelir.tarih.year == yil:
+                    aylik_gelirler[gelir.tarih.month - 1] += gelir.tutar
+            
+            # Giderleri aylık olarak grupla
+            for gider in giderler:
+                if gider.tarih and gider.tarih.year == yil:
+                    aylik_giderler[gider.tarih.month - 1] += gider.tutar
+            
+            # Kategori bazlı karşılaştırmalar için veri hazırla
+            kategori_gelirler = {}
+            kategori_giderler = {}
+            
+            # Gelir kategorileri
+            for gelir in gelirler:
+                if gelir.tarih and gelir.tarih.year == yil and gelir.kategori:
+                    ana_kategori = gelir.kategori.ana_kategori.name if gelir.kategori.ana_kategori else "Tanımsız"
+                    if ana_kategori not in kategori_gelirler:
+                        kategori_gelirler[ana_kategori] = [0.0] * 12
+                    kategori_gelirler[ana_kategori][gelir.tarih.month - 1] += gelir.tutar
+            
+            # Gider kategorileri
+            for gider in giderler:
+                if gider.tarih and gider.tarih.year == yil and gider.kategori:
+                    ana_kategori = gider.kategori.ana_kategori.name if gider.kategori.ana_kategori else "Tanımsız"
+                    if ana_kategori not in kategori_giderler:
+                        kategori_giderler[ana_kategori] = [0.0] * 12
+                    kategori_giderler[ana_kategori][gider.tarih.month - 1] += gider.tutar
+            
+            # Burada grafik çizim işlemleri yapılacak
+            # Şimdilik placeholder olarak bırakıyoruz
+            pass
+            
+        except Exception as e:
+            self.show_error(f"Aylık özet yüklenirken hata oluştu: {str(e)}")
+
+    def setup_trend_analizi_tab(self) -> None:
+        """Trend Analizi tab'ı - Zaman serisi grafikleri ile finansal eğilimleri gösterir"""
+        try:
+            tab = self.tabview.tab("Trend Analizi")
+            
+            # Ana container
+            main_frame = ctk.CTkFrame(tab, fg_color=self.colors["surface"])
+            main_frame.pack(fill="both", expand=True, padx=5, pady=5)
+            
+            # ===== ÜST KISIM: GRAFİKLER =====
+            chart_frame = ctk.CTkFrame(main_frame, fg_color=self.colors["background"], border_width=1, border_color=self.colors["primary"])
+            chart_frame.pack(fill="both", expand=True, padx=0, pady=(0, 8))
+            
+            # Başlık
+            chart_title = ctk.CTkLabel(
+                chart_frame,
+                text="Finansal Eğilim Analizi",
+                font=ctk.CTkFont(size=10, weight="bold"),
+                text_color=self.colors["primary"]
+            )
+            chart_title.pack(anchor="w", padx=10, pady=(5, 5))
+            
+            # Grafik container - Tek sütun halinde
+            charts_container = ctk.CTkFrame(chart_frame, fg_color=self.colors["background"])
+            charts_container.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+            
+            # Trend grafiği alanı
+            trend_chart_frame = ctk.CTkFrame(charts_container, fg_color=self.colors["surface"])
+            trend_chart_frame.pack(fill="both", expand=True, padx=0)
+            
+            trend_title = ctk.CTkLabel(
+                trend_chart_frame,
+                text="Zaman Serisi Eğilimi",
+                font=ctk.CTkFont(size=9, weight="bold"),
+                text_color=self.colors["text"]
+            )
+            trend_title.pack(anchor="w", padx=5, pady=(5, 2))
+            
+            # Trend grafiği canvas alanı
+            self.trend_chart_canvas = ctk.CTkFrame(trend_chart_frame, fg_color="white", width=600, height=400)
+            self.trend_chart_canvas.pack(fill="both", expand=True, padx=5, pady=5)
+            
+            # ===== ALT KISIM: FİLTRELEME =====
+            self.setup_trend_analizi_filtreleme_paneli(main_frame)
+            
+            # Verileri yükle
+            tab.after(100, self.load_trend_analizi)
+        except Exception as e:
+            self.show_error(f"Trend Analizi sekmesi oluşturulurken hata oluştu: {str(e)}")
+
+    def setup_trend_analizi_filtreleme_paneli(self, parent: ctk.CTkFrame) -> None:
+        """Trend Analizi sekmesi için filtreleme paneli"""
+        filter_frame = ctk.CTkFrame(
+            parent,
+            fg_color=self.colors["background"],
+            border_width=1,
+            border_color=self.colors["primary"]
+        )
+        filter_frame.pack(fill="x", padx=0, pady=(0, 0))
+        
+        # Başlık
+        filter_title = ctk.CTkLabel(
+            filter_frame,
+            text="Filtre",
+            font=ctk.CTkFont(size=9, weight="bold"),
+            text_color=self.colors["primary"]
+        )
+        filter_title.pack(anchor="w", padx=8, pady=(3, 3))
+        
+        # Filtre container
+        filter_content = ctk.CTkFrame(filter_frame, fg_color=self.colors["background"])
+        filter_content.pack(fill="x", padx=8, pady=(0, 5))
+        
+        from datetime import datetime
+        
+        # Yıl seçimi
+        yil_label = ctk.CTkLabel(
+            filter_content,
+            text="Yıl:",
+            font=ctk.CTkFont(size=8),
+            text_color=self.colors["text"]
+        )
+        yil_label.pack(side="left", padx=(0, 5))
+        
+        # Veritabanından kullanılabilir yılları al
+        yillar = self.get_veritabani_yillari()
+        
+        self.trend_analizi_yil_combo = ctk.CTkComboBox(
+            filter_content,
+            values=yillar,
+            command=self.on_trend_analizi_yil_change,
+            width=65,
+            height=24,
+            button_color=self.colors["primary"],
+            button_hover_color=self.colors["success"],
+            dropdown_font=ctk.CTkFont(size=8)
+        )
+        
+        # En yeni yılı seç
+        if yillar:
+            self.trend_analizi_yil_combo.set(yillar[-1])
+        else:
+            self.trend_analizi_yil_combo.set(str(datetime.now().year))
+        
+        self.trend_analizi_yil_combo.pack(side="left", padx=(0, 15))
+        
+        # Temizle butonu
+        temizle_btn = ctk.CTkButton(
+            filter_content,
+            text="Temizle",
+            command=self.temizle_trend_analizi_filtreleri,
+            fg_color=self.colors["primary"],
+            hover_color=self.colors["success"],
+            text_color="white",
+            font=ctk.CTkFont(size=8, weight="bold"),
+            height=24,
+            width=60,
+            corner_radius=3
+        )
+        temizle_btn.pack(side="left", padx=(0, 0))
+
+    def on_trend_analizi_yil_change(self, value: str) -> None:
+        """Yıl değiştiğinde verileri yenile"""
+        self.load_trend_analizi()
+
+    def temizle_trend_analizi_filtreleri(self) -> None:
+        """Trend Analizi filtreleri temizle"""
+        from datetime import datetime
+        yillar = self.get_veritabani_yillari()
+        if yillar:
+            self.trend_analizi_yil_combo.set(yillar[-1])
+        else:
+            self.trend_analizi_yil_combo.set(str(datetime.now().year))
+        self.load_trend_analizi()
+
+    def load_trend_analizi(self) -> None:
+        """Trend analizi verilerini yükle ve grafikleri oluştur"""
+        try:
+            # Filtre parametrelerini al
+            from datetime import datetime
+            
+            if not hasattr(self, 'trend_analizi_yil_combo') or self.trend_analizi_yil_combo is None:
+                yil = datetime.now().year
+            else:
+                yil = int(self.trend_analizi_yil_combo.get())
+            
+            # Tüm işlemleri al
+            gelirler = self.finans_controller.get_gelirler()
+            giderler = self.finans_controller.get_giderler()
+            
+            # Aylık kümülatif verileri hazırla
+            aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
+                    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+            
+            # Aylık kümülatif toplamlar
+            kumulatif_gelirler = [0.0] * 12
+            kumulatif_giderler = [0.0] * 12
+            
+            # Gelirleri aylık olarak kümülatif grupla
+            for gelir in gelirler:
+                if gelir.tarih and gelir.tarih.year == yil:
+                    ay_index = gelir.tarih.month - 1
+                    for i in range(ay_index, 12):
+                        kumulatif_gelirler[i] += gelir.tutar
+            
+            # Giderleri aylık olarak kümülatif grupla
+            for gider in giderler:
+                if gider.tarih and gider.tarih.year == yil:
+                    ay_index = gider.tarih.month - 1
+                    for i in range(ay_index, 12):
+                        kumulatif_giderler[i] += gider.tutar
+            
+            # Kategori bazlı kümülatif karşılaştırmalar için veri hazırla
+            kategori_kumulatif_gelirler = {}
+            kategori_kumulatif_giderler = {}
+            
+            # Gelir kategorileri
+            for gelir in gelirler:
+                if gelir.tarih and gelir.tarih.year == yil and gelir.kategori:
+                    ana_kategori = gelir.kategori.ana_kategori.name if gelir.kategori.ana_kategori else "Tanımsız"
+                    if ana_kategori not in kategori_kumulatif_gelirler:
+                        kategori_kumulatif_gelirler[ana_kategori] = [0.0] * 12
+                    ay_index = gelir.tarih.month - 1
+                    for i in range(ay_index, 12):
+                        kategori_kumulatif_gelirler[ana_kategori][i] += gelir.tutar
+            
+            # Gider kategorileri
+            for gider in giderler:
+                if gider.tarih and gider.tarih.year == yil and gider.kategori:
+                    ana_kategori = gider.kategori.ana_kategori.name if gider.kategori.ana_kategori else "Tanımsız"
+                    if ana_kategori not in kategori_kumulatif_giderler:
+                        kategori_kumulatif_giderler[ana_kategori] = [0.0] * 12
+                    ay_index = gider.tarih.month - 1
+                    for i in range(ay_index, 12):
+                        kategori_kumulatif_giderler[ana_kategori][i] += gider.tutar
+            
+            # Burada grafik çizim işlemleri yapılacak
+            # Şimdilik placeholder olarak bırakıyoruz
+            pass
+            
+        except Exception as e:
+            self.show_error(f"Trend analizi yüklenirken hata oluştu: {str(e)}")

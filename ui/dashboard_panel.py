@@ -205,7 +205,12 @@ class DashboardPanel(BasePanel):
         kpi_grid.pack(fill="both", expand=False)
 
         # KPI 1: Toplam Hesap Bakiyesi
-        toplam_bakiye = self.get_toplam_bakiye()
+        try:
+            toplam_bakiye = self.get_toplam_bakiye()
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Toplam bakiye alınırken hata: {e}")
+            toplam_bakiye = 0.0
         self.create_kpi_card(
             kpi_grid, 
             "💰 Toplam Bakiye", 
@@ -215,7 +220,12 @@ class DashboardPanel(BasePanel):
         )
 
         # KPI 2: Bu Ay Gelirleri
-        bu_ay_geliri = self.get_bu_ay_geliri()
+        try:
+            bu_ay_geliri = self.get_bu_ay_geliri()
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Bu ay geliri alınırken hata: {e}")
+            bu_ay_geliri = 0.0
         self.create_kpi_card(
             kpi_grid,
             "📈 Bu Ay Gelirleri",
@@ -225,7 +235,12 @@ class DashboardPanel(BasePanel):
         )
 
         # KPI 3: Bu Ay Giderleri
-        bu_ay_gideri = self.get_bu_ay_gideri()
+        try:
+            bu_ay_gideri = self.get_bu_ay_gideri()
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Bu ay gideri alınırken hata: {e}")
+            bu_ay_gideri = 0.0
         self.create_kpi_card(
             kpi_grid,
             "📉 Bu Ay Giderleri",
@@ -235,8 +250,14 @@ class DashboardPanel(BasePanel):
         )
 
         # KPI 4: Net Durum
-        net_durum = bu_ay_geliri - bu_ay_gideri
-        renk = self.colors["success"] if net_durum >= 0 else self.colors["error"]
+        try:
+            net_durum = bu_ay_geliri - bu_ay_gideri
+            renk = self.colors["success"] if net_durum >= 0 else self.colors["error"]
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Net durum hesaplanırken hata: {e}")
+            net_durum = 0.0
+            renk = self.colors["error"]
         self.create_kpi_card(
             kpi_grid,
             "⚖️ Aylık Net Durum",
@@ -246,7 +267,12 @@ class DashboardPanel(BasePanel):
         )
 
         # KPI 5: Dolu Lojmanlar
-        dolu_lojman = self.get_dolu_lojman_sayisi()
+        try:
+            dolu_lojman = self.get_dolu_lojman_sayisi()
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Dolu lojman sayısı alınırken hata: {e}")
+            dolu_lojman = 0
         self.create_kpi_card(
             kpi_grid,
             "🏘️ Dolu Lojmanlar",
@@ -256,7 +282,12 @@ class DashboardPanel(BasePanel):
         )
 
         # KPI 6: Aidat Tahsilatı
-        aidat_tahsilat = self.get_aidat_tahsilat_orani()
+        try:
+            aidat_tahsilat = self.get_aidat_tahsilat_orani()
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Aidat tahsilat oranı alınırken hata: {e}")
+            aidat_tahsilat = 0.0
         self.create_kpi_card(
             kpi_grid,
             "💳 Aidat Tahsilatı",
@@ -332,6 +363,12 @@ class DashboardPanel(BasePanel):
         # Grafikleri içeren grid - Responsive grid layout
         charts_grid = ctk.CTkFrame(charts_frame, fg_color=self.colors["background"])
         charts_grid.pack(fill="both", expand=True)
+        
+        # Grid satırlarının eşit boyut almasını sağla (pack'den sonra)
+        charts_grid.grid_rowconfigure(0, weight=1)
+        charts_grid.grid_rowconfigure(1, weight=1)
+        charts_grid.grid_columnconfigure(0, weight=1)
+        charts_grid.grid_columnconfigure(1, weight=1)
 
         # 1. Son 6 ay gelir/gider trendi (geniş, 2 sütun)
         self.create_trend_chart(charts_grid, 0, 0, colspan=2)
@@ -360,7 +397,7 @@ class DashboardPanel(BasePanel):
         parent.grid_columnconfigure(col, weight=1)
         if colspan > 1:
             parent.grid_columnconfigure(col + 1, weight=1)
-
+        
         # Başlık
         title = ctk.CTkLabel(
             chart_frame,
@@ -369,10 +406,10 @@ class DashboardPanel(BasePanel):
             text_color=self.colors["primary"]
         )
         title.pack(anchor="w", padx=6, pady=(5, 2))
-
+        
         # Veriler
         aylar, gelirler, giderler = self.get_6ay_trend_data()
-
+        
         # Responsive grafik oluştur
         try:
             if self.chart_builder and self.chart_manager:
@@ -420,7 +457,7 @@ class DashboardPanel(BasePanel):
         chart_frame.grid(row=row, column=col, padx=3, pady=3, sticky="nsew")
         parent.grid_rowconfigure(row, weight=1)
         parent.grid_columnconfigure(col, weight=1)
-
+        
         # Başlık
         title = ctk.CTkLabel(
             chart_frame,
@@ -485,7 +522,7 @@ class DashboardPanel(BasePanel):
         chart_frame.grid(row=row, column=col, padx=3, pady=3, sticky="nsew")
         parent.grid_rowconfigure(row, weight=1)
         parent.grid_columnconfigure(col, weight=1)
-
+        
         # Başlık
         title = ctk.CTkLabel(
             chart_frame,
@@ -551,8 +588,8 @@ class DashboardPanel(BasePanel):
             hesaplar = self.hesap_controller.get_aktif_hesaplar()
             return float(sum(h.bakiye for h in hesaplar)) if hesaplar else 0.0
         except Exception as e:
-            print(f"Toplam bakiye hatası: {e}")
-            return 0
+            self.logger.error(f"Toplam bakiye hatası: {e}")
+            return 0.0
 
     def get_bu_ay_geliri(self) -> float:
         """Bu ay gelirleri
@@ -563,17 +600,17 @@ class DashboardPanel(BasePanel):
         try:
             islemler = self.finans_controller.get_gelirler()
             if not islemler:
-                return 0
+                return 0.0
             
             bugun = datetime.now()
             baslangic = datetime(bugun.year, bugun.month, 1)
             
             # Bu ay'ın gelirlerini filtrele
             bu_ay_islemler = [i for i in islemler if i.tarih >= baslangic and i.tarih <= bugun]
-            return sum(i.tutar for i in bu_ay_islemler)
+            return float(sum(i.tutar for i in bu_ay_islemler))
         except Exception as e:
-            print(f"Gelir hesaplama hatası: {e}")
-            return 0
+            self.logger.error(f"Gelir hesaplama hatası: {e}")
+            return 0.0
 
     def get_bu_ay_gideri(self) -> float:
         """Bu ay giderleri
@@ -584,17 +621,17 @@ class DashboardPanel(BasePanel):
         try:
             islemler = self.finans_controller.get_giderler()
             if not islemler:
-                return 0
+                return 0.0
             
             bugun = datetime.now()
             baslangic = datetime(bugun.year, bugun.month, 1)
             
             # Bu ay'ın giderlerini filtrele
             bu_ay_islemler = [i for i in islemler if i.tarih >= baslangic and i.tarih <= bugun]
-            return sum(i.tutar for i in bu_ay_islemler)
+            return float(sum(i.tutar for i in bu_ay_islemler))
         except Exception as e:
-            print(f"Gider hesaplama hatası: {e}")
-            return 0
+            self.logger.error(f"Gider hesaplama hatası: {e}")
+            return 0.0
 
     def get_dolu_lojman_sayisi(self) -> int:
         """Dolu lojmanların sayısı (sakini olan daireler)
@@ -605,7 +642,8 @@ class DashboardPanel(BasePanel):
         try:
             dolu_daireler = self.daire_controller.get_dolu_daireler()
             return len(dolu_daireler) if dolu_daireler else 0
-        except:
+        except Exception as e:
+            self.logger.error(f"Dolu lojman sayısı hatası: {e}")
             return 0
 
     def get_aidat_tahsilat_orani(self) -> float:
@@ -628,12 +666,12 @@ class DashboardPanel(BasePanel):
                 db.close()
             
             if not aidatlar:
-                return 0
+                return 0.0
             
             # Toplam aidat tutarı
             toplam_aidat = sum(a.toplam_tutar for a in aidatlar)
             if toplam_aidat == 0:
-                return 0
+                return 0.0
             
             # Ödenen toplam tutar
             odenen_tutar = 0.0
@@ -647,8 +685,8 @@ class DashboardPanel(BasePanel):
             oran = (odenen_tutar / float(toplam_aidat)) * 100.0
             return float(min(oran, 100.0))  # 100'den fazla olmasın
         except Exception as e:
-            print(f"Toplam aidat tahsilat oranı hatası: {e}")
-            return 0
+            self.logger.error(f"Toplam aidat tahsilat oranı hatası: {e}")
+            return 0.0
 
     def get_6ay_trend_data(self) -> tuple[list[str], list[float], list[float]]:
         """Son 12 aylık gelir/gider trendi

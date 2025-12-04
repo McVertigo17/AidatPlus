@@ -574,7 +574,7 @@ class AidatPlusApp:
 
     def center_window(self, window: ctk.CTkToplevel, width: int, height: int) -> None:
         """
-        Yeni pencereyi ana pencerenin üstünden 2cm aşağıdan başlayacak şekilde konumlandır.
+        Yeni pencereyi ana pencerenin aynı konumunda açılacak şekilde konumlandır.
         
         Responsive Window Manager'ı kullanarak ekran boyutuna göre otomatik ayarlanır.
         
@@ -584,7 +584,7 @@ class AidatPlusApp:
             height: Pencere yüksekliği (piksel)
         """
         self.responsive_manager.center_relative_to_parent(
-            window, width, height, offset_y=75
+            window, width, height, offset_y=0
         )
 
     def close_panel(self, panel_name: str, window: ctk.CTkToplevel) -> None:

@@ -299,7 +299,6 @@ Zaman serisi grafikleri:
 - Gelir trendi
 - Gider trendi
 - Bakiye trendi
-
 ### Filtreler
 
 Çoğu raporda filtreleme var:

@@ -735,9 +735,37 @@ new_sakin = self.sakin_controller.create(**new_sakin_data)  # ← Yeni kayıt
 
 ---
 
-**Son Güncelleme**: 2 Aralık 2025 (v1.4.2 Kullanıcı Geri Bildirimi)  
-**Versiyon**: 1.4.2 (UI/UX İyileştirmeleri)  
-**Durum**: ✅ v1.1 Tamamlandı - ✅ v1.2 Tamamlandı - ✅ v1.3 Tamamlandı - ✅ v1.4 Tamamlandı - ✅ v1.4.1 Tamamlandı (Performans) - ✅ v1.4.2 Tamamlandı (UI/UX)
+**Son Güncelleme**: 4 Aralık 2025 21:50 (v1.5.3 Test Session - Bug Fix)  
+**Versiyon**: 1.5.3 (Test Infrastructure & Coverage)  
+**Durum**: ✅ v1.1 - v1.4 Tamamlandı - ✅ v1.5 İçerisinde - ✅ v1.5.3 Test Session Tamamlandı (2 Bug Fix)
+
+---
+
+## 📝 Değişim Geçmişi (v1.5.3)
+
+### Test Session - 4 Aralık 2025 (Bug Fix) ✅
+
+- ✅ **Test Başarısızlıkları Düzeltildi** (2 test)
+  - `test_yedek_al_opens_file_dialog`: Mock path yanlış → Düzeltildi
+  - `test_yedekten_yukle_opens_file_dialog`: os.path.getsize() mock eksik → Düzeltildi
+  - Fix: Module-specific mock path'leri (ui.ayarlar_panel.filedialog)
+  
+- ✅ **Test Coverage Analiz**
+  - Coverage: 13.16% (Hedef: 70%+)
+  - Dashboard: 88.53% ✅
+  - Aidat: 49.14% 🟡
+  - Lojman: 31.37% ⚠️
+  - Rapor: 6.87% - 7.99% 🔴 (Kritik)
+  
+- ✅ **Dökümanlar Güncellendi**
+  - TEST_SESSION_REPORT_20251204.md oluşturuldu
+  - TODO.md güncellendi (v1.5.3 durum)
+  - TEST_AUDIT_v1.6.md güncellendi
+
+- 🎯 **v1.6 Planı**
+  - Phase 1: UI Panel Coverage (12-20h)
+  - Phase 2: Advanced Testing (6-12h)
+  - Phase 3: Infrastructure (10-16h)
 
 ---
 

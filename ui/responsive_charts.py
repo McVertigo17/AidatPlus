@@ -132,26 +132,26 @@ class ResponsiveChartManager:
         # Grafik türüne göre boyut hesapla
         if chart_type == "trend":
             # Trend chart: Çok geniş ve dar (colspan=2)
-            height_inch = 2.8
+            height_inch = 0.8  # Daha kompakt
             # Genişliği optimize et
             width_inch = min(width_inch, 10)  # Maksimum 10 inç
         elif chart_type == "pie":
             # Pie chart: Kare benzeri
             size = min(width_inch, 3.2)
-            height_inch = size * 0.9
+            height_inch = 0.8  # Eşit boyut
             width_inch = size
         elif chart_type == "bar":
             # Bar chart: Orta yükseklik
-            height_inch = 2.5
+            height_inch = 0.8
             width_inch = min(width_inch, 4.2)
         else:  # default
             # Default: Standart boyut
-            height_inch = 2.2
+            height_inch = 0.8
             width_inch = min(width_inch, 4)
         
         # Minimum kontrol
-        width_inch = max(width_inch, 1.5)
-        height_inch = max(height_inch, 1.0)
+        width_inch = max(width_inch, 1.3)
+        height_inch = max(height_inch, 0.8)
         
         self.logger.debug(
             f"Calculated figsize for {chart_type}: "

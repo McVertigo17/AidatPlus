@@ -339,19 +339,23 @@ def test_yedek_al_opens_file_dialog(monkeypatch):
     def mock_filedialog_asksaveasfilename(**kwargs):
         nonlocal filedialog_called
         filedialog_called = True
-        return "/fake/path/backup.xlsx"
+        return "c:\\fake\\path\\backup.xlsx"
     
-    monkeypatch.setattr("tkinter.filedialog.asksaveasfilename", mock_filedialog_asksaveasfilename)
+    monkeypatch.setattr("ui.ayarlar_panel.filedialog.asksaveasfilename", mock_filedialog_asksaveasfilename)
+    
+    # Mock os.path.getsize for file size calculation
+    monkeypatch.setattr("ui.ayarlar_panel.os.path.getsize", lambda x: 1024 * 50)  # 50 KB
     
     # Mock controller
     panel.backup_controller = MagicMock()
     panel.backup_controller.backup_to_excel.return_value = True
     
-    # Mock messagebox
-    messagebox_called = False
-    def mock_show_message(message, title="Bilgi"):
-        nonlocal messagebox_called
-        messagebox_called = True
+    # Mock show_message method
+    show_message_called = False
+    original_show_message = panel.show_message
+    def mock_show_message(message, *args, **kwargs):
+        nonlocal show_message_called
+        show_message_called = True
     
     panel.show_message = mock_show_message
     
@@ -359,8 +363,8 @@ def test_yedek_al_opens_file_dialog(monkeypatch):
     panel.yedek_al("excel")
     
     # Check that filedialog was called
-    assert filedialog_called
-    assert messagebox_called
+    assert filedialog_called, "File dialog was not called"
+    assert show_message_called, "show_message was not called"
 
 
 def test_yedekten_yukle_opens_file_dialog(monkeypatch):
@@ -383,15 +387,19 @@ def test_yedekten_yukle_opens_file_dialog(monkeypatch):
     def mock_filedialog_askopenfilename(**kwargs):
         nonlocal filedialog_called
         filedialog_called = True
-        return "/fake/path/backup.xlsx"
+        return "c:\\fake\\path\\backup.xlsx"
     
-    monkeypatch.setattr("tkinter.filedialog.askopenfilename", mock_filedialog_askopenfilename)
+    monkeypatch.setattr("ui.ayarlar_panel.filedialog.askopenfilename", mock_filedialog_askopenfilename)
     
-    # Mock os.path.exists
-    monkeypatch.setattr("os.path.exists", lambda x: True)
+    # Mock os.path.exists and getsize
+    monkeypatch.setattr("ui.ayarlar_panel.os.path.exists", lambda x: True)
+    monkeypatch.setattr("ui.ayarlar_panel.os.path.getsize", lambda x: 1024 * 100)  # 100 KB
     
-    # Mock messagebox.askyesno
+    # Mock messagebox.askyesno via panel
+    ask_yes_no_called = False
     def mock_ask_yes_no(message, title="Onay"):
+        nonlocal ask_yes_no_called
+        ask_yes_no_called = True
         return True  # Simulate user clicking "Yes"
     
     panel.ask_yes_no = mock_ask_yes_no
@@ -400,11 +408,11 @@ def test_yedekten_yukle_opens_file_dialog(monkeypatch):
     panel.backup_controller = MagicMock()
     panel.backup_controller.restore_from_excel.return_value = True
     
-    # Mock messagebox.showinfo
-    messagebox_called = False
-    def mock_show_message(message, title="Bilgi"):
-        nonlocal messagebox_called
-        messagebox_called = True
+    # Mock show_message method
+    show_message_called = False
+    def mock_show_message(message, *args, **kwargs):
+        nonlocal show_message_called
+        show_message_called = True
     
     panel.show_message = mock_show_message
     
@@ -412,8 +420,8 @@ def test_yedekten_yukle_opens_file_dialog(monkeypatch):
     panel.yedekten_yukle("excel")
     
     # Check that filedialog was called
-    assert filedialog_called
-    assert messagebox_called
+    assert filedialog_called, "File dialog was not called"
+    assert show_message_called, "show_message was not called"
 
 
 def test_sifirla_veritabani_requires_confirmation(monkeypatch):
