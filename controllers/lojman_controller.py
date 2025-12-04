@@ -10,7 +10,7 @@ from controllers.base_controller import BaseController
 from models.base import Lojman
 from models.validation import Validator
 from models.exceptions import ValidationError
-from database.config import get_db
+from database.config import get_db_session
 
 # Logger import
 from utils.logger import get_logger
@@ -46,39 +46,37 @@ class LojmanController(BaseController[Lojman]):
             ValidationError: Veri geçersiz ise
             DatabaseError: Veritabanı hatası
         """
-        session = db or get_db()
-        close_db = db is None
+        if db is not None:
+            return self._execute_create(data, db)
         
-        try:
-            # Lojman adı validasyonu
-            Validator.validate_required(data.get("ad"), "Lojman Adı")
-            Validator.validate_string_length(
-                data.get("ad", ""), "Lojman Adı", 2, 100
+        with get_db_session() as session:
+            return self._execute_create(data, session)
+    
+    def _execute_create(self, data: dict, session: Session) -> Lojman:
+        """Helper method to execute create logic"""
+        # Lojman adı validasyonu
+        Validator.validate_required(data.get("ad"), "Lojman Adı")
+        Validator.validate_string_length(
+            data.get("ad", ""), "Lojman Adı", 2, 100
+        )
+        
+        # Benzersiz ad kontrolü
+        existing_lojman = session.query(Lojman).filter(
+            Lojman.ad == data.get("ad"),
+            Lojman.aktif == True
+        ).first()
+        
+        if existing_lojman:
+            raise ValidationError(
+                f"'{data.get('ad')}' adlı lojman zaten mevcut",
+                code="VAL_001"
             )
-            
-            # Benzersiz ad kontrolü
-            existing_lojman = session.query(Lojman).filter(
-                Lojman.ad == data.get("ad"),
-                Lojman.aktif == True
-            ).first()
-            
-            if existing_lojman:
-                raise ValidationError(
-                    f"'{data.get('ad')}' adlı lojman zaten mevcut",
-                    code="VAL_001"
-                )
-            
-            # Adres validasyonu
-            Validator.validate_required(data.get("adres"), "Adres")
-            
-            # Base class'ın create metodunu çağır
-            return super().create(data, session)
         
-        except ValidationError:
-            raise
-        finally:
-            if close_db:
-                session.close()
+        # Adres validasyonu
+        Validator.validate_required(data.get("adres"), "Adres")
+        
+        # Base class'ın create metodunu çağır
+        return super().create(data, session)
     
     def update(self, id: int, data: dict, db: Optional[Session] = None) -> Optional[Lojman]:
         """
@@ -94,88 +92,76 @@ class LojmanController(BaseController[Lojman]):
         Raises:
             ValidationError: Veri geçersiz ise
         """
-        session = db or get_db()
-        close_db = db is None
+        if db is not None:
+            return self._execute_update(id, data, db)
         
-        try:
-            # Lojman adı validasyonu
-            if "ad" in data and data["ad"]:
-                Validator.validate_string_length(
-                    data["ad"], "Lojman Adı", 2, 100
+        with get_db_session() as session:
+            return self._execute_update(id, data, session)
+    
+    def _execute_update(self, id: int, data: dict, session: Session) -> Optional[Lojman]:
+        """Helper method to execute update logic"""
+        # Lojman adı validasyonu
+        if "ad" in data and data["ad"]:
+            Validator.validate_string_length(
+                data["ad"], "Lojman Adı", 2, 100
+            )
+            
+            # Benzersiz ad kontrolü (kendi adı hariç)
+            existing_lojman = session.query(Lojman).filter(
+                Lojman.ad == data["ad"],
+                Lojman.aktif == True,
+                Lojman.id != id
+            ).first()
+            
+            if existing_lojman:
+                raise ValidationError(
+                    f"'{data['ad']}' adlı lojman zaten mevcut",
+                    code="VAL_001"
                 )
-                
-                # Benzersiz ad kontrolü (kendi adı hariç)
-                existing_lojman = session.query(Lojman).filter(
-                    Lojman.ad == data["ad"],
-                    Lojman.aktif == True,
-                    Lojman.id != id
-                ).first()
-                
-                if existing_lojman:
-                    raise ValidationError(
-                        f"'{data['ad']}' adlı lojman zaten mevcut",
-                        code="VAL_001"
-                    )
-            
-            # Adres validasyonu
-            if "adres" in data and data["adres"]:
-                Validator.validate_required(data["adres"], "Adres")
-            
-            # Base class'ın update metodunu çağır
-            return super().update(id, data, session)
         
-        except ValidationError:
-            raise
-        finally:
-            if close_db:
-                session.close()
+        # Adres validasyonu
+        if "adres" in data and data["adres"]:
+            Validator.validate_required(data["adres"], "Adres")
+        
+        # Base class'ın update metodunu çağır
+        return super().update(id, data, session)
 
-    def get_all_with_details(self, db: Session = None) -> List[Lojman]:
+    def get_all_with_details(self, db: Optional[Session] = None) -> List[Lojman]:
         """Tüm lojmanları detaylarıyla birlikte getir"""
-        if db is None:
-            db = get_db()
-            close_db = True
-        else:
-            close_db = False
-
-        try:
+        if db is not None:
             result = db.query(Lojman).options(
                 joinedload(Lojman.bloklar).joinedload('daireler')
             ).filter(Lojman.aktif == True).all()
             return cast(List[Lojman], result)
-        finally:
-            if close_db:
-                db.close()
+        
+        with get_db_session() as session:
+            result = session.query(Lojman).options(
+                joinedload(Lojman.bloklar).joinedload('daireler')
+            ).filter(Lojman.aktif == True).all()
+            return cast(List[Lojman], result)
 
-    def get_aktif_lojmanlar(self, db: Session = None) -> List[Lojman]:
+    def get_aktif_lojmanlar(self, db: Optional[Session] = None) -> List[Lojman]:
         """Aktif lojmanları getir"""
-        if db is None:
-            db = get_db()
-            close_db = True
-        else:
-            close_db = False
-
-        try:
+        if db is not None:
             result = db.query(Lojman).filter(Lojman.aktif == True).all()
             return cast(List[Lojman], result)
-        finally:
-            if close_db:
-                db.close()
+        
+        with get_db_session() as session:
+            result = session.query(Lojman).filter(Lojman.aktif == True).all()
+            return cast(List[Lojman], result)
 
-    def get_by_ad(self, ad: str, db: Session = None) -> Optional[Lojman]:
+    def get_by_ad(self, ad: str, db: Optional[Session] = None) -> Optional[Lojman]:
         """Ada göre lojman getir"""
-        if db is None:
-            db = get_db()
-            close_db = True
-        else:
-            close_db = False
-
-        try:
+        if db is not None:
             result = db.query(Lojman).filter(
                 Lojman.ad == ad,
                 Lojman.aktif == True
             ).first()
             return cast(Optional[Lojman], result)
-        finally:
-            if close_db:
-                db.close()
+        
+        with get_db_session() as session:
+            result = session.query(Lojman).filter(
+                Lojman.ad == ad,
+                Lojman.aktif == True
+            ).first()
+            return cast(Optional[Lojman], result)

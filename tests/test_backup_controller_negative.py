@@ -541,8 +541,8 @@ class TestRoundTripEdgeCases:
         assert result1 is True
         
         # Get sheet names from first backup
-        xls1 = pd.ExcelFile(str(backup1))
-        sheets1 = set(xls1.sheet_names)
+        with pd.ExcelFile(str(backup1)) as xls1:
+            sheets1 = set(xls1.sheet_names)
         
         # Restore
         bc.db = db_session
@@ -556,8 +556,8 @@ class TestRoundTripEdgeCases:
         assert result2 is True
         
         # Verify both backups have similar structure
-        xls2 = pd.ExcelFile(str(backup2))
-        sheets2 = set(xls2.sheet_names)
+        with pd.ExcelFile(str(backup2)) as xls2:
+            sheets2 = set(xls2.sheet_names)
         
         # At minimum, both should have the model tables
         assert len(sheets2) >= 1

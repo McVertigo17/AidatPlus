@@ -111,7 +111,7 @@ class ConfigurationManager:
             logger.debug("Environment variables yüklendi")
             
             # 4. Database (varsa)
-            # self._load_database_configs()
+            self._load_database_configs()
             
         except ConfigError as e:
             logger.error(f"Konfigürasyon yükleme hatası: {str(e)}")
@@ -251,7 +251,59 @@ class ConfigurationManager:
         app_config tablosundan runtime ayarlarını yükler.
         (Şu an kullanılmıyor, gelecek sürümler için)
         """
-        pass
+        try:
+            from database.config import get_db
+            from models.base import Ayar
+            import json
+
+            try:
+                db = get_db()
+            except Exception as e:
+                logger.debug(f"DB bağlantısı oluşturulurken hata: {e}")
+                return
+
+            try:
+                ayarlar = db.query(Ayar).all()
+            except Exception as e:
+                logger.warning(f"Veritabanından ayarlar alınırken hata: {e}")
+                return
+            finally:
+                try:
+                    db.close()
+                except Exception:
+                    pass
+
+            for ayar in ayarlar:
+                if not getattr(ayar, 'anahtar', None):
+                    continue
+                key = ayar.anahtar
+                value = ayar.deger
+
+                if value is None:
+                    parsed = None
+                else:
+                    s = str(value).strip()
+                    # Eğer JSON içerikse JSON parse et
+                    if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")):
+                        try:
+                            parsed = json.loads(s)
+                        except Exception:
+                            parsed = s
+                    else:
+                        parsed = self._parse_value(s)
+
+                try:
+                    # Nested anahtarlar varsa set_nested kullan
+                    self.set_nested(key, parsed)
+                except Exception as e:
+                    logger.warning(f"Ayar '{key}' yüklenirken hata: {e}")
+                    # continue with next key
+                    continue
+
+        except Exception as e:
+            logger.warning(f"_load_database_configs hatası: {e}")
+            # Fail silent — DB configs are optional
+            return
     
     def _merge_configs(self, new_config: Dict[str, Any], 
                       path: str = '') -> None:

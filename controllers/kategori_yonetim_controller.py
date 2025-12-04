@@ -12,7 +12,7 @@ from controllers.base_controller import BaseController
 from models.base import AnaKategori, AltKategori
 from models.validation import Validator
 from models.exceptions import ValidationError, NotFoundError, DuplicateError, BusinessLogicError
-from database.config import get_db
+from database.config import get_db_session
 
 # Logger import
 from utils.logger import get_logger
@@ -39,22 +39,20 @@ class KategoriYonetimController:
         Tüm ana kategorileri getir.
         
         Args:
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             List[AnaKategori]: Ana kategorilerin listesi
         """
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
+        if db is not None:
+            # Mevcut session ile çalış
             result = db.query(AnaKategori).options(joinedload(AnaKategori.alt_kategoriler)).all()
             return cast(List[AnaKategori], result)
-        finally:
-            if close_db and db is not None:
-                db.close()
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            result = session.query(AnaKategori).options(joinedload(AnaKategori.alt_kategoriler)).all()
+            return cast(List[AnaKategori], result)
 
     def get_ana_kategori_by_id(self, kategori_id: int, db: Optional[Session] = None) -> Optional[AnaKategori]:
         """
@@ -62,7 +60,7 @@ class KategoriYonetimController:
         
         Args:
             kategori_id (int): Ana kategori ID'si
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             AnaKategori | None: Bulunmuş kategori veya None
@@ -78,17 +76,15 @@ class KategoriYonetimController:
         except ValidationError:
             raise
         
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
+        if db is not None:
+            # Mevcut session ile çalış
             result = db.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
             return cast(Optional[AnaKategori], result)
-        finally:
-            if close_db and db is not None:
-                db.close()
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            result = session.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
+            return cast(Optional[AnaKategori], result)
 
     def create_ana_kategori(self, name: str, aciklama: Optional[str] = None, tip: str = "gelir", db: Optional[Session] = None) -> AnaKategori:
         """
@@ -98,7 +94,7 @@ class KategoriYonetimController:
             name (str): Kategori adı (2-100 karakter)
             aciklama (str, optional): Kategori açıklaması
             tip (str): Kategori tipi ("gelir" veya "gider", default: "gelir")
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             AnaKategori: Oluşturulan ana kategori
@@ -110,41 +106,51 @@ class KategoriYonetimController:
         Example:
             >>> kategori = controller.create_ana_kategori("Gelirler", "Ana gelir kategorisi", "gelir")
         """
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
-            # Kategori adı validasyonu
-            Validator.validate_required(name, "Kategori Adı")
-            Validator.validate_string_length(name, "Kategori Adı", 2, 100)
-            
-            # Tip validasyonu
-            Validator.validate_required(tip, "Kategori Tipi")
-            Validator.validate_choice(tip, "Kategori Tipi", ["gelir", "gider"])
-            
-            kategori = AnaKategori()
-            kategori.name = name.strip()
-            kategori.aciklama = aciklama
-            kategori.tip = tip
-            db.add(kategori)
-            db.commit()
-            db.refresh(kategori)
-            return kategori
-        except IntegrityError:
-            if db is not None:
+        # Kategori adı validasyonu
+        Validator.validate_required(name, "Kategori Adı")
+        Validator.validate_string_length(name, "Kategori Adı", 2, 100)
+        
+        # Tip validasyonu
+        Validator.validate_required(tip, "Kategori Tipi")
+        Validator.validate_choice(tip, "Kategori Tipi", ["gelir", "gider"])
+        
+        if db is not None:
+            # Mevcut session ile çalış
+            try:
+                kategori = AnaKategori()
+                kategori.name = name.strip()
+                kategori.aciklama = aciklama
+                kategori.tip = tip
+                db.add(kategori)
+                db.commit()
+                db.refresh(kategori)
+                return kategori
+            except IntegrityError:
                 db.rollback()
-            raise DuplicateError(
-                f"'{name}' adlı ana kategori zaten var",
-                code="DUP_002",
-                details={"name": name}
-            )
-        except ValidationError:
-            raise
-        finally:
-            if close_db and db is not None:
-                db.close()
+                raise DuplicateError(
+                    f"'{name}' adlı ana kategori zaten var",
+                    code="DUP_002",
+                    details={"name": name}
+                )
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            try:
+                kategori = AnaKategori()
+                kategori.name = name.strip()
+                kategori.aciklama = aciklama
+                kategori.tip = tip
+                session.add(kategori)
+                session.commit()
+                session.refresh(kategori)
+                return kategori
+            except IntegrityError:
+                session.rollback()
+                raise DuplicateError(
+                    f"'{name}' adlı ana kategori zaten var",
+                    code="DUP_002",
+                    details={"name": name}
+                )
 
     def update_ana_kategori(self, kategori_id: int, name: str, aciklama: Optional[str] = None, tip: str = "gelir", db: Optional[Session] = None) -> bool:
         """
@@ -155,7 +161,7 @@ class KategoriYonetimController:
             name (str): Kategori adı (2-100 karakter)
             aciklama (str, optional): Kategori açıklaması
             tip (str): Kategori tipi ("gelir" veya "gider")
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             bool: Başarılı ise True, başarısız ise False
@@ -184,37 +190,55 @@ class KategoriYonetimController:
         except ValidationError:
             raise
         
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
-            kategori = db.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
-            if not kategori:
-                raise NotFoundError(
-                    f"Ana kategori ID {kategori_id} bulunamadı",
-                    code="NOT_FOUND_005",
-                    details={"kategori_id": kategori_id}
-                )
-            
-            # Kategoriyi güncelle
-            kategori.name = name.strip()
-            kategori.aciklama = aciklama
-            kategori.tip = tip
-            db.commit()
-            return True
-        except IntegrityError:
-            if db is not None:
+        if db is not None:
+            # Mevcut session ile çalış
+            try:
+                kategori = db.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
+                if not kategori:
+                    raise NotFoundError(
+                        f"Ana kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_005",
+                        details={"kategori_id": kategori_id}
+                    )
+                
+                # Kategoriyi güncelle
+                kategori.name = name.strip()
+                kategori.aciklama = aciklama
+                kategori.tip = tip
+                db.commit()
+                return True
+            except IntegrityError:
                 db.rollback()
-            raise DuplicateError(
-                f"'{name}' adlı ana kategori zaten var",
-                code="DUP_002",
-                details={"name": name}
-            )
-        finally:
-            if close_db and db is not None:
-                db.close()
+                raise DuplicateError(
+                    f"'{name}' adlı ana kategori zaten var",
+                    code="DUP_002",
+                    details={"name": name}
+                )
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            try:
+                kategori = session.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
+                if not kategori:
+                    raise NotFoundError(
+                        f"Ana kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_005",
+                        details={"kategori_id": kategori_id}
+                    )
+                
+                # Kategoriyi güncelle
+                kategori.name = name.strip()
+                kategori.aciklama = aciklama
+                kategori.tip = tip
+                session.commit()
+                return True
+            except IntegrityError:
+                session.rollback()
+                raise DuplicateError(
+                    f"'{name}' adlı ana kategori zaten var",
+                    code="DUP_002",
+                    details={"name": name}
+                )
 
     def delete_ana_kategori(self, kategori_id: int, db: Optional[Session] = None) -> bool:
         """
@@ -222,7 +246,7 @@ class KategoriYonetimController:
         
         Args:
             kategori_id (int): Ana kategori ID'si
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             bool: Başarılı ise True, başarısız ise False
@@ -243,61 +267,82 @@ class KategoriYonetimController:
         except ValidationError:
             raise
         
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
-            kategori = db.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
-            if not kategori:
-                raise NotFoundError(
-                    f"Ana kategori ID {kategori_id} bulunamadı",
-                    code="NOT_FOUND_005",
+        if db is not None:
+            # Mevcut session ile çalış
+            try:
+                kategori = db.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
+                if not kategori:
+                    raise NotFoundError(
+                        f"Ana kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_005",
+                        details={"kategori_id": kategori_id}
+                    )
+                
+                # Alt kategorisi varsa sil yapma
+                if len(kategori.alt_kategoriler) > 0:
+                    raise BusinessLogicError(
+                        f"'{kategori.name}' kategorisinin alt kategorileri var. Önce alt kategorileri silin.",
+                        code="BUS_LOGIC_001",
+                        details={"kategori_id": kategori_id, "alt_kategori_sayisi": len(kategori.alt_kategoriler)}
+                    )
+                
+                db.delete(kategori)
+                db.commit()
+                return True
+            except (NotFoundError, BusinessLogicError):
+                raise
+            except Exception as e:
+                db.rollback()
+                raise ValidationError(
+                    f"Ana kategori silinirken hata oluştu: {str(e)}",
+                    code="VAL_008",
                     details={"kategori_id": kategori_id}
                 )
-            
-            # Alt kategorisi varsa sil yapma
-            if len(kategori.alt_kategoriler) > 0:
-                raise BusinessLogicError(
-                    f"'{kategori.name}' kategorisinin alt kategorileri var. Önce alt kategorileri silin.",
-                    code="BUS_LOGIC_001",
-                    details={"kategori_id": kategori_id, "alt_kategori_sayisi": len(kategori.alt_kategoriler)}
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            try:
+                kategori = session.query(AnaKategori).filter(AnaKategori.id == kategori_id).first()
+                if not kategori:
+                    raise NotFoundError(
+                        f"Ana kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_005",
+                        details={"kategori_id": kategori_id}
+                    )
+                
+                # Alt kategorisi varsa sil yapma
+                if len(kategori.alt_kategoriler) > 0:
+                    raise BusinessLogicError(
+                        f"'{kategori.name}' kategorisinin alt kategorileri var. Önce alt kategorileri silin.",
+                        code="BUS_LOGIC_001",
+                        details={"kategori_id": kategori_id, "alt_kategori_sayisi": len(kategori.alt_kategoriler)}
+                    )
+                
+                session.delete(kategori)
+                session.commit()
+                return True
+            except (NotFoundError, BusinessLogicError):
+                raise
+            except Exception as e:
+                session.rollback()
+                raise ValidationError(
+                    f"Ana kategori silinirken hata oluştu: {str(e)}",
+                    code="VAL_008",
+                    details={"kategori_id": kategori_id}
                 )
-            
-            db.delete(kategori)
-            db.commit()
-            return True
-        except (NotFoundError, BusinessLogicError):
-            raise
-        except Exception as e:
-            if db is not None:
-                db.rollback()
-            raise ValidationError(
-                f"Ana kategori silinirken hata oluştu: {str(e)}",
-                code="VAL_008",
-                details={"kategori_id": kategori_id}
-            )
-        finally:
-            if close_db and db is not None:
-                db.close()
 
     def get_alt_kategoriler(self, db: Optional[Session] = None) -> List[dict]:
         """
         Tüm alt kategorileri ve bağlı oldukları ana kategorileri getir.
         
         Args:
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             List[dict]: Alt kategorilerin listesi (id, name, parent_id, parent_name vb.)
         """
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
+        if db is not None:
+            # Mevcut session ile çalış
             alt_kategoriler = db.query(AltKategori).all()
             result = []
             for alt in alt_kategoriler:
@@ -309,9 +354,20 @@ class KategoriYonetimController:
                     "parent_name": alt.ana_kategori.name if alt.ana_kategori else None
                 })
             return result
-        finally:
-            if close_db and db is not None:
-                db.close()
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            alt_kategoriler = session.query(AltKategori).all()
+            result = []
+            for alt in alt_kategoriler:
+                result.append({
+                    "id": alt.id,
+                    "name": alt.name,
+                    "aciklama": alt.aciklama,
+                    "parent_id": alt.parent_id,
+                    "parent_name": alt.ana_kategori.name if alt.ana_kategori else None
+                })
+            return result
 
     def get_alt_kategoriler_by_parent(self, parent_id: int, db: Optional[Session] = None) -> List[AltKategori]:
         """
@@ -319,7 +375,7 @@ class KategoriYonetimController:
         
         Args:
             parent_id (int): Ana kategori ID'si
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             List[AltKategori]: Alt kategorilerin listesi
@@ -335,17 +391,15 @@ class KategoriYonetimController:
         except ValidationError:
             raise
         
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
+        if db is not None:
+            # Mevcut session ile çalış
             result = db.query(AltKategori).filter(AltKategori.parent_id == parent_id).all()
             return result or []
-        finally:
-            if close_db and db is not None:
-                db.close()
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            result = session.query(AltKategori).filter(AltKategori.parent_id == parent_id).all()
+            return result or []
 
     def create_alt_kategori(self, parent_id: int, name: str, aciklama: Optional[str] = None, db: Optional[Session] = None) -> AltKategori:
         """
@@ -355,7 +409,7 @@ class KategoriYonetimController:
             parent_id (int): Ana kategori ID'si (zorunlu)
             name (str): Alt kategori adı (2-100 karakter)
             aciklama (str, optional): Alt kategori açıklaması
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             AltKategori: Oluşturulan alt kategori
@@ -380,40 +434,61 @@ class KategoriYonetimController:
         except ValidationError:
             raise
         
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
+        if db is not None:
+            # Mevcut session ile çalış
+            try:
+                # Ana kategorinin varlığını kontrol et
+                parent = db.query(AnaKategori).filter(AnaKategori.id == parent_id).first()
+                if not parent:
+                    raise NotFoundError(
+                        f"Ana kategori ID {parent_id} bulunamadı",
+                        code="NOT_FOUND_006",
+                        details={"parent_id": parent_id}
+                    )
 
-        try:
-            # Ana kategorinin varlığını kontrol et
-            parent = db.query(AnaKategori).filter(AnaKategori.id == parent_id).first()
-            if not parent:
-                raise NotFoundError(
-                    f"Ana kategori ID {parent_id} bulunamadı",
-                    code="NOT_FOUND_006",
-                    details={"parent_id": parent_id}
-                )
-
-            alt_kategori = AltKategori()
-            alt_kategori.parent_id = parent_id
-            alt_kategori.name = name.strip()
-            alt_kategori.aciklama = aciklama
-            db.add(alt_kategori)
-            db.commit()
-            db.refresh(alt_kategori)
-            return alt_kategori
-        except IntegrityError:
-            if db is not None:
+                alt_kategori = AltKategori()
+                alt_kategori.parent_id = parent_id
+                alt_kategori.name = name.strip()
+                alt_kategori.aciklama = aciklama
+                db.add(alt_kategori)
+                db.commit()
+                db.refresh(alt_kategori)
+                return alt_kategori
+            except IntegrityError:
                 db.rollback()
-            raise DuplicateError(
-                f"'{name}' adlı alt kategori zaten var",
-                code="DUP_003",
-                details={"name": name}
-            )
-        finally:
-            if close_db and db is not None:
-                db.close()
+                raise DuplicateError(
+                    f"'{name}' adlı alt kategori zaten var",
+                    code="DUP_003",
+                    details={"name": name}
+                )
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            try:
+                # Ana kategorinin varlığını kontrol et
+                parent = session.query(AnaKategori).filter(AnaKategori.id == parent_id).first()
+                if not parent:
+                    raise NotFoundError(
+                        f"Ana kategori ID {parent_id} bulunamadı",
+                        code="NOT_FOUND_006",
+                        details={"parent_id": parent_id}
+                    )
+
+                alt_kategori = AltKategori()
+                alt_kategori.parent_id = parent_id
+                alt_kategori.name = name.strip()
+                alt_kategori.aciklama = aciklama
+                session.add(alt_kategori)
+                session.commit()
+                session.refresh(alt_kategori)
+                return alt_kategori
+            except IntegrityError:
+                session.rollback()
+                raise DuplicateError(
+                    f"'{name}' adlı alt kategori zaten var",
+                    code="DUP_003",
+                    details={"name": name}
+                )
 
     def update_alt_kategori(self, kategori_id: int, name: str, aciklama: Optional[str] = None, parent_id: Optional[int] = None, db: Optional[Session] = None) -> bool:
         """
@@ -424,7 +499,7 @@ class KategoriYonetimController:
             name (str): Alt kategori adı (2-100 karakter)
             aciklama (str, optional): Alt kategori açıklaması
             parent_id (int, optional): Ana kategori ID'si (ana kategoriyi değiştirmek için)
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             bool: Başarılı ise True, başarısız ise False
@@ -457,47 +532,75 @@ class KategoriYonetimController:
         except ValidationError:
             raise
         
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
-            kategori = db.query(AltKategori).filter(AltKategori.id == kategori_id).first()
-            if not kategori:
-                raise NotFoundError(
-                    f"Alt kategori ID {kategori_id} bulunamadı",
-                    code="NOT_FOUND_007",
-                    details={"kategori_id": kategori_id}
-                )
-            
-            # Ana kategoriyi değiştirmek istiyorsa yeni ana kategoriyi kontrol et ve güncelle
-            if parent_id is not None:
-                yeni_parent = db.query(AnaKategori).filter(AnaKategori.id == parent_id).first()
-                if not yeni_parent:
+        if db is not None:
+            # Mevcut session ile çalış
+            try:
+                kategori = db.query(AltKategori).filter(AltKategori.id == kategori_id).first()
+                if not kategori:
                     raise NotFoundError(
-                        f"Ana kategori ID {parent_id} bulunamadı",
-                        code="NOT_FOUND_006",
-                        details={"parent_id": parent_id}
+                        f"Alt kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_007",
+                        details={"kategori_id": kategori_id}
                     )
-                # Ana kategorideği güncelle (farklı olsa da olmasa da)
-                kategori.parent_id = parent_id
-            
-            kategori.name = name.strip()
-            kategori.aciklama = aciklama
-            db.commit()
-            return True
-        except IntegrityError:
-            if db is not None:
+                
+                # Ana kategoriyı değiştirmek istiyorsa yeni ana kategoriyi kontrol et ve güncelle
+                if parent_id is not None:
+                    yeni_parent = db.query(AnaKategori).filter(AnaKategori.id == parent_id).first()
+                    if not yeni_parent:
+                        raise NotFoundError(
+                            f"Ana kategori ID {parent_id} bulunamadı",
+                            code="NOT_FOUND_006",
+                            details={"parent_id": parent_id}
+                        )
+                    # Ana kategorideği güncelle (farklı olsa da olmasa da)
+                    kategori.parent_id = parent_id
+                
+                kategori.name = name.strip()
+                kategori.aciklama = aciklama
+                db.commit()
+                return True
+            except IntegrityError:
                 db.rollback()
-            raise DuplicateError(
-                f"'{name}' adlı alt kategori zaten var",
-                code="DUP_003",
-                details={"name": name}
-            )
-        finally:
-            if close_db and db is not None:
-                db.close()
+                raise DuplicateError(
+                    f"'{name}' adlı alt kategori zaten var",
+                    code="DUP_003",
+                    details={"name": name}
+                )
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            try:
+                kategori = session.query(AltKategori).filter(AltKategori.id == kategori_id).first()
+                if not kategori:
+                    raise NotFoundError(
+                        f"Alt kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_007",
+                        details={"kategori_id": kategori_id}
+                    )
+                
+                # Ana kategoriyı değiştirmek istiyorsa yeni ana kategoriyi kontrol et ve güncelle
+                if parent_id is not None:
+                    yeni_parent = session.query(AnaKategori).filter(AnaKategori.id == parent_id).first()
+                    if not yeni_parent:
+                        raise NotFoundError(
+                            f"Ana kategori ID {parent_id} bulunamadı",
+                            code="NOT_FOUND_006",
+                            details={"parent_id": parent_id}
+                        )
+                    # Ana kategorideği güncelle (farklı olsa da olmasa da)
+                    kategori.parent_id = parent_id
+                
+                kategori.name = name.strip()
+                kategori.aciklama = aciklama
+                session.commit()
+                return True
+            except IntegrityError:
+                session.rollback()
+                raise DuplicateError(
+                    f"'{name}' adlı alt kategori zaten var",
+                    code="DUP_003",
+                    details={"name": name}
+                )
 
     def delete_alt_kategori(self, kategori_id: int, db: Optional[Session] = None) -> bool:
         """
@@ -505,7 +608,7 @@ class KategoriYonetimController:
         
         Args:
             kategori_id (int): Alt kategori ID'si
-            db (Session, optional): Veritabanı session'ı
+            db (Session, optional): Veritabanı session'ı (context manager kullanırsa ignore edilir)
         
         Returns:
             bool: Başarılı ise True, başarısız ise False
@@ -526,41 +629,66 @@ class KategoriYonetimController:
         except ValidationError:
             raise
         
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
-        try:
-            kategori = db.query(AltKategori).filter(AltKategori.id == kategori_id).first()
-            if not kategori:
-                raise NotFoundError(
-                    f"Alt kategori ID {kategori_id} bulunamadı",
-                    code="NOT_FOUND_007",
+        if db is not None:
+            # Mevcut session ile çalış
+            try:
+                kategori = db.query(AltKategori).filter(AltKategori.id == kategori_id).first()
+                if not kategori:
+                    raise NotFoundError(
+                        f"Alt kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_007",
+                        details={"kategori_id": kategori_id}
+                    )
+                
+                # Finans işleminde kullanılıp kullanılmadığını kontrol et
+                if len(kategori.finans_islemleri) > 0:
+                    raise BusinessLogicError(
+                        f"'{kategori.name}' kategorisi {len(kategori.finans_islemleri)} finans işleminde kullanılıyor. Silinemez.",
+                        code="BUS_LOGIC_002",
+                        details={"kategori_id": kategori_id, "islem_sayisi": len(kategori.finans_islemleri)}
+                    )
+                
+                db.delete(kategori)
+                db.commit()
+                return True
+            except (NotFoundError, BusinessLogicError):
+                raise
+            except Exception as e:
+                db.rollback()
+                raise ValidationError(
+                    f"Alt kategori silinirken hata oluştu: {str(e)}",
+                    code="VAL_008",
                     details={"kategori_id": kategori_id}
                 )
-            
-            # Finans işleminde kullanılıp kullanılmadığını kontrol et
-            if len(kategori.finans_islemleri) > 0:
-                raise BusinessLogicError(
-                    f"'{kategori.name}' kategorisi {len(kategori.finans_islemleri)} finans işleminde kullanılıyor. Silinemez.",
-                    code="BUS_LOGIC_002",
-                    details={"kategori_id": kategori_id, "islem_sayisi": len(kategori.finans_islemleri)}
+        
+        # Yeni session oluştur
+        with get_db_session() as session:
+            try:
+                kategori = session.query(AltKategori).filter(AltKategori.id == kategori_id).first()
+                if not kategori:
+                    raise NotFoundError(
+                        f"Alt kategori ID {kategori_id} bulunamadı",
+                        code="NOT_FOUND_007",
+                        details={"kategori_id": kategori_id}
+                    )
+                
+                # Finans işleminde kullanılıp kullanılmadığını kontrol et
+                if len(kategori.finans_islemleri) > 0:
+                    raise BusinessLogicError(
+                        f"'{kategori.name}' kategorisi {len(kategori.finans_islemleri)} finans işleminde kullanılıyor. Silinemez.",
+                        code="BUS_LOGIC_002",
+                        details={"kategori_id": kategori_id, "islem_sayisi": len(kategori.finans_islemleri)}
+                    )
+                
+                session.delete(kategori)
+                session.commit()
+                return True
+            except (NotFoundError, BusinessLogicError):
+                raise
+            except Exception as e:
+                session.rollback()
+                raise ValidationError(
+                    f"Alt kategori silinirken hata oluştu: {str(e)}",
+                    code="VAL_008",
+                    details={"kategori_id": kategori_id}
                 )
-            
-            db.delete(kategori)
-            db.commit()
-            return True
-        except (NotFoundError, BusinessLogicError):
-            raise
-        except Exception as e:
-            if db is not None:
-                db.rollback()
-            raise ValidationError(
-                f"Alt kategori silinirken hata oluştu: {str(e)}",
-                code="VAL_008",
-                details={"kategori_id": kategori_id}
-            )
-        finally:
-            if close_db and db is not None:
-                db.close()

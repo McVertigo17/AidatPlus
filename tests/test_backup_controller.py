@@ -48,9 +48,9 @@ def test_backup_excel_and_restore(sample_lojer_and_daire, db_session, tmp_path, 
     assert excel_file.exists()
 
     # confirm the excel has sheet for lojmanlar and daireler
-    xls = pd.ExcelFile(excel_file)
-    assert 'lojmanlar' in xls.sheet_names
-    assert 'daireler' in xls.sheet_names
+    with pd.ExcelFile(excel_file) as xls:
+        assert 'lojmanlar' in xls.sheet_names
+        assert 'daireler' in xls.sheet_names
 
     # reset database and ensure tables are empty
     controller.db = db

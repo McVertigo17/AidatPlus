@@ -10,7 +10,7 @@ from controllers.base_controller import BaseController
 from models.base import Blok, Lojman
 from models.validation import Validator
 from models.exceptions import ValidationError, NotFoundError
-from database.config import get_db
+from database.config import get_db_session
 
 # Logger import
 from utils.logger import get_logger
@@ -56,47 +56,45 @@ class BlokController(BaseController[Blok]):
             ... }
             >>> blok = controller.create(data)
         """
-        session = db or get_db()
-        close_db = db is None
+        if db is not None:
+            return self._execute_create(data, db)
         
-        try:
-            # Blok adı validasyonu
-            Validator.validate_required(data.get("ad"), "Blok Adı")
-            Validator.validate_string_length(
-                data.get("ad", ""), "Blok Adı", 2, 50
+        with get_db_session() as session:
+            return self._execute_create(data, session)
+    
+    def _execute_create(self, data: dict, session: Session) -> Blok:
+        """Helper method to execute create logic"""
+        # Blok adı validasyonu
+        Validator.validate_required(data.get("ad"), "Blok Adı")
+        Validator.validate_string_length(
+            data.get("ad", ""), "Blok Adı", 2, 50
+        )
+        
+        # Lojman ID validasyonu (zorunlu)
+        Validator.validate_required(data.get("lojman_id"), "Lojman")
+        Validator.validate_integer(data.get("lojman_id"), "Lojman ID'si")
+        Validator.validate_positive_number(data.get("lojman_id"), "Lojman ID'si")
+        
+        # Lojman var mı kontrol et
+        lojman = session.query(Lojman).filter(
+            Lojman.id == data.get("lojman_id"),
+            Lojman.aktif == True
+        ).first()
+        
+        if not lojman:
+            raise NotFoundError(
+                f"Lojman ID {data.get('lojman_id')} bulunamadı",
+                code="NOT_FOUND_001",
+                details={"lojman_id": data.get("lojman_id")}
             )
-            
-            # Lojman ID validasyonu (zorunlu)
-            Validator.validate_required(data.get("lojman_id"), "Lojman")
-            Validator.validate_integer(data.get("lojman_id"), "Lojman ID'si")
-            Validator.validate_positive_number(data.get("lojman_id"), "Lojman ID'si")
-            
-            # Lojman var mı kontrol et
-            lojman = session.query(Lojman).filter(
-                Lojman.id == data.get("lojman_id"),
-                Lojman.aktif == True
-            ).first()
-            
-            if not lojman:
-                raise NotFoundError(
-                    f"Lojman ID {data.get('lojman_id')} bulunamadı",
-                    code="NOT_FOUND_001",
-                    details={"lojman_id": data.get("lojman_id")}
-                )
-            
-            # Kat sayısı validasyonu (opsiyonel)
-            if "kat_sayisi" in data and data["kat_sayisi"]:
-                Validator.validate_integer(data.get("kat_sayisi"), "Kat Sayısı")
-                Validator.validate_positive_number(data.get("kat_sayisi"), "Kat Sayısı")
-            
-            # Base class'ın create metodunu çağır
-            return super().create(data, session)
         
-        except (ValidationError, NotFoundError):
-            raise
-        finally:
-            if close_db:
-                session.close()
+        # Kat sayısı validasyonu (opsiyonel)
+        if "kat_sayisi" in data and data["kat_sayisi"]:
+            Validator.validate_integer(data.get("kat_sayisi"), "Kat Sayısı")
+            Validator.validate_positive_number(data.get("kat_sayisi"), "Kat Sayısı")
+        
+        # Base class'ın create metodunu çağır
+        return super().create(data, session)
     
     def update(self, id: int, data: dict, db: Optional[Session] = None) -> Optional[Blok]:
         """
@@ -120,99 +118,92 @@ class BlokController(BaseController[Blok]):
             >>> data = {"kat_sayisi": 6}
             >>> blok = controller.update(1, data)
         """
-        session = db or get_db()
-        close_db = db is None
+        if db is not None:
+            return self._execute_update(id, data, db)
         
-        try:
-            # Blok adı validasyonu (güncelleniyorsa)
-            if "ad" in data and data["ad"]:
-                Validator.validate_string_length(
-                    data["ad"], "Blok Adı", 2, 50
+        with get_db_session() as session:
+            return self._execute_update(id, data, session)
+    
+    def _execute_update(self, id: int, data: dict, session: Session) -> Optional[Blok]:
+        """Helper method to execute update logic"""
+        # Blok adı validasyonu (güncelleniyorsa)
+        if "ad" in data and data["ad"]:
+            Validator.validate_string_length(
+                data["ad"], "Blok Adı", 2, 50
+            )
+        
+        # Lojman ID validasyonu (güncelleniyorsa)
+        if "lojman_id" in data and data["lojman_id"] is not None:
+            Validator.validate_integer(data["lojman_id"], "Lojman ID'si")
+            Validator.validate_positive_number(data["lojman_id"], "Lojman ID'si")
+            
+            # Lojman var mı kontrol et
+            lojman = session.query(Lojman).filter(
+                Lojman.id == data["lojman_id"],
+                Lojman.aktif == True
+            ).first()
+            
+            if not lojman:
+                raise NotFoundError(
+                    f"Lojman ID {data['lojman_id']} bulunamadı",
+                    code="NOT_FOUND_001",
+                    details={"lojman_id": data["lojman_id"]}
                 )
-            
-            # Lojman ID validasyonu (güncelleniyorsa)
-            if "lojman_id" in data and data["lojman_id"] is not None:
-                Validator.validate_integer(data["lojman_id"], "Lojman ID'si")
-                Validator.validate_positive_number(data["lojman_id"], "Lojman ID'si")
-                
-                # Lojman var mı kontrol et
-                lojman = session.query(Lojman).filter(
-                    Lojman.id == data["lojman_id"],
-                    Lojman.aktif == True
-                ).first()
-                
-                if not lojman:
-                    raise NotFoundError(
-                        f"Lojman ID {data['lojman_id']} bulunamadı",
-                        code="NOT_FOUND_001",
-                        details={"lojman_id": data["lojman_id"]}
-                    )
-            
-            # Kat sayısı validasyonu (güncelleniyorsa)
-            if "kat_sayisi" in data and data["kat_sayisi"]:
-                Validator.validate_integer(data["kat_sayisi"], "Kat Sayısı")
-                Validator.validate_positive_number(data["kat_sayisi"], "Kat Sayısı")
-            
-            # Base class'ın update metodunu çağır
-            return super().update(id, data, session)
         
-        except (ValidationError, NotFoundError):
-            raise
-        finally:
-            if close_db:
-                session.close()
+        # Kat sayısı validasyonu (güncelleniyorsa)
+        if "kat_sayisi" in data and data["kat_sayisi"]:
+            Validator.validate_integer(data["kat_sayisi"], "Kat Sayısı")
+            Validator.validate_positive_number(data["kat_sayisi"], "Kat Sayısı")
+        
+        # Base class'ın update metodunu çağır
+        return super().update(id, data, session)
 
-    def get_by_lojman(self, lojman_id: int, db: Session = None) -> List[Blok]:
+    def get_by_lojman(self, lojman_id: int, db: Optional[Session] = None) -> List[Blok]:
         """Lojman ID'sine göre blokları getir"""
-        if db is None:
-            db = get_db()
-            close_db = True
-        else:
-            close_db = False
-
-        try:
+        if db is not None:
             result = db.query(Blok).filter(
                 Blok.lojman_id == lojman_id,
                 Blok.aktif == True
             ).all()
             return cast(List[Blok], result)
-        finally:
-            if close_db:
-                db.close()
+        
+        with get_db_session() as session:
+            result = session.query(Blok).filter(
+                Blok.lojman_id == lojman_id,
+                Blok.aktif == True
+            ).all()
+            return cast(List[Blok], result)
 
-    def get_by_ad_and_lojman(self, ad: str, lojman_id: int, db: Session = None) -> Optional[Blok]:
+    def get_by_ad_and_lojman(self, ad: str, lojman_id: int, db: Optional[Session] = None) -> Optional[Blok]:
         """Blok adına ve lojman ID'sine göre blok getir"""
-        if db is None:
-            db = get_db()
-            close_db = True
-        else:
-            close_db = False
-
-        try:
+        if db is not None:
             result = db.query(Blok).filter(
                 Blok.ad == ad,
                 Blok.lojman_id == lojman_id,
                 Blok.aktif == True
             ).first()
             return cast(Optional[Blok], result)
-        finally:
-            if close_db:
-                db.close()
+        
+        with get_db_session() as session:
+            result = session.query(Blok).filter(
+                Blok.ad == ad,
+                Blok.lojman_id == lojman_id,
+                Blok.aktif == True
+            ).first()
+            return cast(Optional[Blok], result)
 
-    def get_all_with_details(self, db: Session = None) -> List[Blok]:
+    def get_all_with_details(self, db: Optional[Session] = None) -> List[Blok]:
         """Tüm blokları detaylarıyla birlikte getir"""
-        if db is None:
-            db = get_db()
-            close_db = True
-        else:
-            close_db = False
-
-        try:
+        if db is not None:
             result = db.query(Blok).options(
                 joinedload(Blok.daireler),
                 joinedload(Blok.lojman)
             ).filter(Blok.aktif == True).all()
             return cast(List[Blok], result)
-        finally:
-            if close_db:
-                db.close()
+        
+        with get_db_session() as session:
+            result = session.query(Blok).options(
+                joinedload(Blok.daireler),
+                joinedload(Blok.lojman)
+            ).filter(Blok.aktif == True).all()
+            return cast(List[Blok], result)

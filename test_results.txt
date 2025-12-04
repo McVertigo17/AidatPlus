@@ -1,0 +1,557 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.8, pytest-9.0.1, pluggy-1.6.0
+rootdir: c:\Users\hhoda\Documents\GitHub\AidatPlus
+configfile: pytest.ini
+plugins: cov-7.0.0
+collected 191 items
+
+tests/test_aidat_controller.py::test_create_aidat_islem 
+-------------------------------- live log call --------------------------------
+INFO     SakinController:logger.py:105 Successfully created record with id 1 for model Sakin
+INFO     AidatIslemController:logger.py:105 Successfully created record with id 1 for model AidatIslem
+PASSED                                                                   [  0%]
+tests/test_ayar_controller.py::test_ayar_controller_create_and_get PASSED [  1%]
+tests/test_ayar_controller.py::test_ayar_controller_update_existing PASSED [  1%]
+tests/test_ayar_controller.py::test_ayar_controller_get_all PASSED       [  2%]
+tests/test_ayar_controller.py::test_ayar_controller_get_with_default PASSED [  2%]
+tests/test_backup_controller.py::test_backup_excel_and_restore PASSED    [  3%]
+tests/test_backup_controller.py::test_backup_xml_and_restore PASSED      [  3%]
+tests/test_backup_controller.py::test_backup_database_file PASSED        [  4%]
+tests/test_backup_controller_negative.py::TestCorruptExcelFiles::test_restore_from_nonexistent_excel_fails PASSED [  4%]
+tests/test_backup_controller_negative.py::TestCorruptExcelFiles::test_restore_from_empty_excel_fails PASSED [  5%]
+tests/test_backup_controller_negative.py::TestCorruptExcelFiles::test_restore_from_malformed_excel_fails PASSED [  5%]
+tests/test_backup_controller_negative.py::TestCorruptExcelFiles::test_restore_from_text_file_instead_of_excel_fails PASSED [  6%]
+tests/test_backup_controller_negative.py::TestCorruptExcelFiles::test_backup_to_excel_with_permission_denied PASSED [  6%]
+tests/test_backup_controller_negative.py::TestCorruptExcelFiles::test_restore_excel_with_invalid_sheet_structure PASSED [  7%]
+tests/test_backup_controller_negative.py::TestCorruptXmlFiles::test_restore_from_nonexistent_xml_fails PASSED [  7%]
+tests/test_backup_controller_negative.py::TestCorruptXmlFiles::test_restore_from_empty_xml_fails PASSED [  8%]
+tests/test_backup_controller_negative.py::TestCorruptXmlFiles::test_restore_from_malformed_xml_fails PASSED [  8%]
+tests/test_backup_controller_negative.py::TestCorruptXmlFiles::test_restore_from_xml_missing_root_element PASSED [  9%]
+tests/test_backup_controller_negative.py::TestCorruptXmlFiles::test_backup_to_xml_with_permission_denied PASSED [  9%]
+tests/test_backup_controller_negative.py::TestCorruptXmlFiles::test_restore_from_xml_with_encoding_error PASSED [ 10%]
+tests/test_backup_controller_negative.py::TestMissingAndInvalidPaths::test_backup_to_excel_nonexistent_directory PASSED [ 10%]
+tests/test_backup_controller_negative.py::TestMissingAndInvalidPaths::test_backup_to_xml_nonexistent_directory PASSED [ 11%]
+tests/test_backup_controller_negative.py::TestMissingAndInvalidPaths::test_backup_to_excel_empty_filepath PASSED [ 12%]
+tests/test_backup_controller_negative.py::TestMissingAndInvalidPaths::test_backup_to_xml_empty_filepath PASSED [ 12%]
+tests/test_backup_controller_negative.py::TestMissingAndInvalidPaths::test_backup_to_excel_none_filepath PASSED [ 13%]
+tests/test_backup_controller_negative.py::TestMissingAndInvalidPaths::test_restore_excel_empty_filepath PASSED [ 13%]
+tests/test_backup_controller_negative.py::TestMissingAndInvalidPaths::test_backup_database_file_nonexistent_target PASSED [ 14%]
+tests/test_backup_controller_negative.py::TestPermissionAndDiskErrors::test_backup_to_excel_disk_full_simulation PASSED [ 14%]
+tests/test_backup_controller_negative.py::TestPermissionAndDiskErrors::test_restore_excel_permission_denied_on_read PASSED [ 15%]
+tests/test_backup_controller_negative.py::TestPermissionAndDiskErrors::test_restore_xml_permission_denied_on_read PASSED [ 15%]
+tests/test_backup_controller_negative.py::TestPermissionAndDiskErrors::test_backup_database_file_permission_denied PASSED [ 16%]
+tests/test_backup_controller_negative.py::TestResetDatabaseEdgeCases::test_reset_database_with_transaction_error PASSED [ 16%]
+tests/test_backup_controller_negative.py::TestResetDatabaseEdgeCases::test_reset_database_with_delete_error PASSED [ 17%]
+tests/test_backup_controller_negative.py::TestDatabaseStateAfterFailure::test_database_unchanged_after_failed_restore_excel PASSED [ 17%]
+tests/test_backup_controller_negative.py::TestDatabaseStateAfterFailure::test_database_state_valid_after_failed_restore_xml PASSED [ 18%]
+tests/test_backup_controller_negative.py::TestRoundTripEdgeCases::test_backup_restore_backup_excel_consistency PASSED [ 18%]
+tests/test_backup_controller_negative.py::TestConcurrentAndRepeatedOperations::test_multiple_backups_creates_unique_files PASSED [ 19%]
+tests/test_backup_controller_negative.py::TestConcurrentAndRepeatedOperations::test_multiple_backups_with_same_session PASSED [ 19%]
+tests/test_backup_controller_resource_warnings.py::test_backup_to_excel_no_resource_warnings PASSED [ 20%]
+tests/test_base_controller.py::TestCreateIntegrityError::test_create_duplicate_lojman_name_raises_validation_error 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Successfully fetched 1 records for model Lojman
+PASSED                                                                   [ 20%]
+tests/test_base_controller.py::TestCreateTypeError::test_create_with_invalid_data_type_raises_validation_error 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully fetched 0 records for model Lojman
+INFO     LojmanController:logger.py:105 Successfully fetched 0 records for model Lojman
+PASSED                                                                   [ 21%]
+tests/test_base_controller.py::TestCreateWithoutManualSession::test_create_without_session_parameter_uses_provided_db 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+PASSED                                                                   [ 21%]
+tests/test_base_controller.py::TestUpdateNotFound::test_update_nonexistent_record_raises_not_found_error 
+-------------------------------- live log call --------------------------------
+WARNING  LojmanController:logger.py:114 Record with id 99999 not found for model Lojman
+WARNING  LojmanController:logger.py:114 Record with id 99999 not found for model Lojman during update
+PASSED                                                                   [ 22%]
+tests/test_base_controller.py::TestUpdateIntegrityError::test_update_to_duplicate_name_raises_validation_error 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Successfully created record with id 2 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 2 found for model Lojman
+PASSED                                                                   [ 23%]
+tests/test_base_controller.py::TestUpdateTypeError::test_update_with_invalid_field_type_raises_validation_error 
+-------------------------------- live log call --------------------------------
+INFO     DaireController:logger.py:105 Record with id 1 found for model Daire
+ERROR    DaireController:logger.py:123 Database error while updating record with id 1 for model Daire: (builtins.ValueError) could not convert string to float: 'invalid'
+[SQL: UPDATE daireler SET kiraya_esas_alan=?, updated_at=CURRENT_TIMESTAMP WHERE daireler.id = ?]
+[parameters: [{'kiraya_esas_alan': 'invalid', 'daireler_id': 1}]]
+FAILED                                                                   [ 23%]
+tests/test_base_controller.py::TestUpdatePartialFields::test_update_partial_fields_preserves_others 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+INFO     LojmanController:logger.py:105 Successfully updated record with id 1 for model Lojman
+PASSED                                                                   [ 24%]
+tests/test_base_controller.py::TestDeleteNotFound::test_delete_nonexistent_record_returns_false 
+-------------------------------- live log call --------------------------------
+WARNING  LojmanController:logger.py:114 Record with id 99999 not found for model Lojman
+WARNING  LojmanController:logger.py:114 Record with id 99999 not found for model Lojman during delete
+PASSED                                                                   [ 24%]
+tests/test_base_controller.py::TestDeleteForeignKeyViolation::test_delete_record_verifies_proper_removal 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+INFO     LojmanController:logger.py:105 Successfully deleted record with id 1 for model Lojman
+WARNING  LojmanController:logger.py:114 Record with id 1 not found for model Lojman
+PASSED                                                                   [ 25%]
+tests/test_base_controller.py::TestDeleteWithoutChildren::test_delete_orphan_lojman_succeeds 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+INFO     LojmanController:logger.py:105 Successfully deleted record with id 1 for model Lojman
+WARNING  LojmanController:logger.py:114 Record with id 1 not found for model Lojman
+PASSED                                                                   [ 25%]
+tests/test_base_controller.py::TestSessionManagement::test_get_all_with_provided_session_returns_records 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Successfully fetched 1 records for model Lojman
+PASSED                                                                   [ 26%]
+tests/test_base_controller.py::TestSessionManagement::test_create_with_external_session_does_not_close_it 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+PASSED                                                                   [ 26%]
+tests/test_base_controller.py::TestMultipleErrorsWithSession::test_session_remains_usable_after_failed_create 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Successfully created record with id 2 for model Lojman
+PASSED                                                                   [ 27%]
+tests/test_base_controller.py::TestTransactionAtomicity::test_create_with_validation_error_rolls_back_completely 
+-------------------------------- live log call --------------------------------
+INFO     SakinController:logger.py:105 Successfully fetched 0 records for model Sakin
+PASSED                                                                   [ 27%]
+tests/test_base_controller.py::TestUpdateAtomicity::test_update_with_multiple_field_changes_all_or_nothing 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Successfully created record with id 2 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+PASSED                                                                   [ 28%]
+tests/test_base_controller.py::TestDeleteAtomicity::test_delete_successful_removes_record 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     BlokController:logger.py:105 Successfully created record with id 1 for model Blok
+INFO     BlokController:logger.py:105 Record with id 1 found for model Blok
+INFO     BlokController:logger.py:105 Successfully deleted record with id 1 for model Blok
+WARNING  BlokController:logger.py:114 Record with id 1 not found for model Blok
+PASSED                                                                   [ 28%]
+tests/test_base_controller.py::TestErrorLogging::test_validation_error_has_code 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+PASSED                                                                   [ 29%]
+tests/test_base_controller.py::TestErrorLogging::test_not_found_error_includes_details 
+-------------------------------- live log call --------------------------------
+WARNING  LojmanController:logger.py:114 Record with id 999999 not found for model Lojman
+WARNING  LojmanController:logger.py:114 Record with id 999999 not found for model Lojman during update
+PASSED                                                                   [ 29%]
+tests/test_base_controller.py::TestComplexRelationshipRollback::test_create_sakin_with_valid_daire_reference 
+-------------------------------- live log call --------------------------------
+INFO     SakinController:logger.py:105 Successfully created record with id 1 for model Sakin
+INFO     DaireController:logger.py:105 Record with id 1 found for model Daire
+INFO     SakinController:logger.py:105 Record with id 1 found for model Sakin
+INFO     SakinController:logger.py:105 Record with id 1 found for model Sakin
+PASSED                                                                   [ 30%]
+tests/test_base_controller.py::TestConcurrentUpdateSimulation::test_update_from_different_sessions_last_write_wins 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 2 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 2 found for model Lojman
+INFO     LojmanController:logger.py:105 Successfully updated record with id 2 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 2 found for model Lojman
+INFO     LojmanController:logger.py:105 Successfully updated record with id 2 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 2 found for model Lojman
+PASSED                                                                   [ 30%]
+tests/test_base_controller.py::TestBulkOperationWithErrors::test_multiple_creates_with_one_failure_doesnt_affect_others 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Successfully created record with id 2 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 2 found for model Lojman
+PASSED                                                                   [ 31%]
+tests/test_base_controller.py::TestRollbackPerformance::test_repeated_create_failures_maintain_performance 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+PASSED                                                                   [ 31%]
+tests/test_belge_controller.py::TestBelgeControllerHappyPath::test_dosya_ekle_sil_var_mi 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/1234_20251204_143200.pdf (ID: 1234)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\1234_20251204_143200.pdf
+PASSED                                                                   [ 32%]
+tests/test_belge_controller.py::TestBelgeControllerHappyPath::test_dosya_ekle_multiple_file_types 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gider/1001_20251204_143200.pdf (ID: 1001)
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gider/1002_20251204_143200.jpg (ID: 1002)
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gider/1003_20251204_143200.xlsx (ID: 1003)
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gider/1004_20251204_143200.txt (ID: 1004)
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gider/1005_20251204_143200.zip (ID: 1005)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gider\1001_20251204_143200.pdf
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gider\1002_20251204_143200.jpg
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gider\1003_20251204_143200.xlsx
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gider\1004_20251204_143200.txt
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gider\1005_20251204_143200.zip
+PASSED                                                                   [ 32%]
+tests/test_belge_controller.py::TestBelgeControllerHappyPath::test_dosya_ekle_creates_type_directory 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Transfer_1764847920.444046/9999_20251204_143200.pdf (ID: 9999)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Transfer_1764847920.444046\9999_20251204_143200.pdf
+PASSED                                                                   [ 33%]
+tests/test_belge_controller.py::TestDosyaEkleFileNotFound::test_dosya_ekle_nonexistent_source_file_fails 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File not found: /nonexistent/path/to/file.pdf
+PASSED                                                                   [ 34%]
+tests/test_belge_controller.py::TestDosyaEkleFileNotFound::test_dosya_ekle_empty_source_path_fails 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File not found: 
+PASSED                                                                   [ 34%]
+tests/test_belge_controller.py::TestDosyaSilNonexistent::test_dosya_sil_nonexistent_file_returns_false 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File not found for deletion: c:\nonexistent\file.pdf
+PASSED                                                                   [ 35%]
+tests/test_belge_controller.py::TestDosyaSilNonexistent::test_dosya_sil_empty_path_fails 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File path not specified for deletion
+PASSED                                                                   [ 35%]
+tests/test_belge_controller.py::TestDosyaSilNonexistent::test_dosya_sil_none_path_fails 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File path not specified for deletion
+PASSED                                                                   [ 36%]
+tests/test_belge_controller.py::TestFileSizeValidation::test_dosya_ekle_file_too_large_fails 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File too large: 52428801 bytes > 52428800 bytes
+PASSED                                                                   [ 36%]
+tests/test_belge_controller.py::TestFileSizeValidation::test_dosya_ekle_file_at_max_size_succeeds 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/1_20251204_143200.pdf (ID: 1)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\1_20251204_143200.pdf
+PASSED                                                                   [ 37%]
+tests/test_belge_controller.py::TestFileTypeValidation::test_dosya_ekle_unsupported_extension_fails 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 Unsupported file type: .exe
+WARNING  BelgeController:logger.py:114 Unsupported file type: .sh
+WARNING  BelgeController:logger.py:114 Unsupported file type: .bat
+WARNING  BelgeController:logger.py:114 Unsupported file type: .com
+WARNING  BelgeController:logger.py:114 Unsupported file type: .ps1
+PASSED                                                                   [ 37%]
+tests/test_belge_controller.py::TestFileTypeValidation::test_dosya_ekle_no_extension_fails 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 Unsupported file type: 
+PASSED                                                                   [ 38%]
+tests/test_belge_controller.py::TestFileTypeValidation::test_dosya_ekle_case_insensitive_extension 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/1_20251204_143200.PDF (ID: 1)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\1_20251204_143200.PDF
+PASSED                                                                   [ 38%]
+tests/test_belge_controller.py::TestDiskAndPermissionErrors::test_dosya_ekle_shutil_copy2_fails 
+-------------------------------- live log call --------------------------------
+ERROR    BelgeController:logger.py:123 Failed to add file: Permission denied
+PASSED                                                                   [ 39%]
+tests/test_belge_controller.py::TestDiskAndPermissionErrors::test_dosya_sil_permission_denied 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/1_20251204_143200.pdf (ID: 1)
+ERROR    BelgeController:logger.py:123 Failed to delete file: File is locked
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\1_20251204_143200.pdf
+PASSED                                                                   [ 39%]
+tests/test_belge_controller.py::TestDiskAndPermissionErrors::test_dosya_ekle_handles_generic_exception 
+-------------------------------- live log call --------------------------------
+ERROR    BelgeController:logger.py:123 Failed to add file: Unexpected filesystem error
+PASSED                                                                   [ 40%]
+tests/test_belge_controller.py::TestPathTraversalAndSecurity::test_dosya_sil_with_path_traversal_attempt 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File not found for deletion: c:\Users\etc\passwd
+PASSED                                                                   [ 40%]
+tests/test_belge_controller.py::TestPathTraversalAndSecurity::test_dosya_ekle_destination_with_special_chars 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: ir/1_20251204_143200.pdf (ID: 1)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\ir\1_20251204_143200.pdf
+PASSED                                                                   [ 41%]
+tests/test_belge_controller.py::TestEmptyAndNullInputs::test_dosya_var_mi_empty_path PASSED [ 41%]
+tests/test_belge_controller.py::TestEmptyAndNullInputs::test_dosya_var_mi_none_path PASSED [ 42%]
+tests/test_belge_controller.py::TestEmptyAndNullInputs::test_dosya_adi_al_empty_path PASSED [ 42%]
+tests/test_belge_controller.py::TestEmptyAndNullInputs::test_dosya_adi_al_none_path PASSED [ 43%]
+tests/test_belge_controller.py::TestEmptyAndNullInputs::test_dosya_ac_empty_path 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File path not specified for opening
+PASSED                                                                   [ 43%]
+tests/test_belge_controller.py::TestEmptyAndNullInputs::test_dosya_ac_nonexistent_file 
+-------------------------------- live log call --------------------------------
+WARNING  BelgeController:logger.py:114 File not found for opening: c:\nonexistent\file.pdf
+PASSED                                                                   [ 44%]
+tests/test_belge_controller.py::TestFilenameGenerationAndStorage::test_dosya_ekle_filename_includes_islem_id_and_timestamp 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/12345_20251204_143200.pdf (ID: 12345)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\12345_20251204_143200.pdf
+PASSED                                                                   [ 45%]
+tests/test_belge_controller.py::TestFilenameGenerationAndStorage::test_dosya_ekle_returns_normalized_path 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/1_20251204_143200.pdf (ID: 1)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\1_20251204_143200.pdf
+PASSED                                                                   [ 45%]
+tests/test_belge_controller.py::TestFileOpeningPlatforms::test_dosya_ac_windows_uses_startfile 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/1_20251204_143200.pdf (ID: 1)
+INFO     BelgeController:logger.py:105 File opened: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\1_20251204_143200.pdf
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\1_20251204_143200.pdf
+PASSED                                                                   [ 46%]
+tests/test_belge_controller.py::TestSequentialOperations::test_add_delete_add_same_islem_id 
+-------------------------------- live log call --------------------------------
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/100_20251204_143200.pdf (ID: 100)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\100_20251204_143200.pdf
+INFO     BelgeController:logger.py:105 File successfully added: belgeler/Gelir/100_20251204_143201.pdf (ID: 100)
+INFO     BelgeController:logger.py:105 File successfully deleted: c:\Users\hhoda\Documents\GitHub\AidatPlus\belgeler\Gelir\100_20251204_143201.pdf
+PASSED                                                                   [ 46%]
+tests/test_blok_lojman_controller.py::test_create_lojman_and_blok 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     BlokController:logger.py:105 Successfully created record with id 1 for model Blok
+INFO     BlokController:logger.py:105 Record with id 1 found for model Blok
+INFO     BlokController:logger.py:105 Successfully updated record with id 1 for model Blok
+PASSED                                                                   [ 47%]
+tests/test_bos_konut_controller.py::test_get_days_in_month PASSED        [ 47%]
+tests/test_bos_konut_controller.py::test_get_month_start_end PASSED      [ 48%]
+tests/test_bos_konut_controller.py::test_calculate_empty_housing_costs_empty_daire PASSED [ 48%]
+tests/test_bos_konut_controller.py::test_calculate_empty_housing_costs_occupied_daire PASSED [ 49%]
+tests/test_bos_konut_controller.py::test_calculate_empty_housing_costs_partial_occupancy PASSED [ 49%]
+tests/test_bos_konut_controller.py::test_format_currency PASSED          [ 50%]
+tests/test_bos_konut_controller.py::test_format_date PASSED              [ 50%]
+tests/test_configuration_manager.py::test_singleton_and_defaults 
+-------------------------------- live log call --------------------------------
+INFO     configuration.config_manager:config_manager.py:66 ConfigurationManager baþlatýlýyor (config_dir=C:\Users\hhoda\AppData\Local\Temp\pytest-of-hhoda\pytest-34\test_singleton_and_defaults0\cfg)
+WARNING  configuration.config_manager:config_manager.py:268 Veritabanýndan ayarlar alýnýrken hata: (sqlite3.OperationalError) no such table: ayarlar
+[SQL: SELECT ayarlar.id AS ayarlar_id, ayarlar.anahtar AS ayarlar_anahtar, ayarlar.deger AS ayarlar_deger, ayarlar.aciklama AS ayarlar_aciklama, ayarlar.created_at AS ayarlar_created_at, ayarlar.updated_at AS ayarlar_updated_at 
+FROM ayarlar]
+(Background on this error at: https://sqlalche.me/e/14/e3q8)
+INFO     configuration.config_manager:config_manager.py:68 ConfigurationManager baþarýyla baþlatýldý
+PASSED                                                                   [ 51%]
+tests/test_configuration_manager.py::test_set_get_set_nested_and_override 
+-------------------------------- live log call --------------------------------
+INFO     configuration.config_manager:config_manager.py:66 ConfigurationManager baþlatýlýyor (config_dir=C:\Users\hhoda\AppData\Local\Temp\pytest-of-hhoda\pytest-34\test_set_get_set_nested_and_ov0\cfg)
+WARNING  configuration.config_manager:config_manager.py:268 Veritabanýndan ayarlar alýnýrken hata: (sqlite3.OperationalError) no such table: ayarlar
+[SQL: SELECT ayarlar.id AS ayarlar_id, ayarlar.anahtar AS ayarlar_anahtar, ayarlar.deger AS ayarlar_deger, ayarlar.aciklama AS ayarlar_aciklama, ayarlar.created_at AS ayarlar_created_at, ayarlar.updated_at AS ayarlar_updated_at 
+FROM ayarlar]
+(Background on this error at: https://sqlalche.me/e/14/e3q8)
+INFO     configuration.config_manager:config_manager.py:68 ConfigurationManager baþarýyla baþlatýldý
+INFO     configuration.config_manager:config_manager.py:524 Configuration yeniden yükleniyor...
+WARNING  configuration.config_manager:config_manager.py:268 Veritabanýndan ayarlar alýnýrken hata: (sqlite3.OperationalError) no such table: ayarlar
+[SQL: SELECT ayarlar.id AS ayarlar_id, ayarlar.anahtar AS ayarlar_anahtar, ayarlar.deger AS ayarlar_deger, ayarlar.aciklama AS ayarlar_aciklama, ayarlar.created_at AS ayarlar_created_at, ayarlar.updated_at AS ayarlar_updated_at 
+FROM ayarlar]
+(Background on this error at: https://sqlalche.me/e/14/e3q8)
+INFO     configuration.config_manager:config_manager.py:528 Configuration yeniden yükleme tamamlandý
+PASSED                                                                   [ 51%]
+tests/test_configuration_manager.py::test_save_and_load_json 
+-------------------------------- live log call --------------------------------
+INFO     configuration.config_manager:config_manager.py:66 ConfigurationManager baþlatýlýyor (config_dir=C:\Users\hhoda\AppData\Local\Temp\pytest-of-hhoda\pytest-34\test_save_and_load_json0\cfg)
+WARNING  configuration.config_manager:config_manager.py:268 Veritabanýndan ayarlar alýnýrken hata: (sqlite3.OperationalError) no such table: ayarlar
+[SQL: SELECT ayarlar.id AS ayarlar_id, ayarlar.anahtar AS ayarlar_anahtar, ayarlar.deger AS ayarlar_deger, ayarlar.aciklama AS ayarlar_aciklama, ayarlar.created_at AS ayarlar_created_at, ayarlar.updated_at AS ayarlar_updated_at 
+FROM ayarlar]
+(Background on this error at: https://sqlalche.me/e/14/e3q8)
+INFO     configuration.config_manager:config_manager.py:68 ConfigurationManager baþarýyla baþlatýldý
+INFO     configuration.config_manager:config_manager.py:458 Config kaydedildi: user_preferences.json
+PASSED                                                                   [ 52%]
+tests/test_configuration_manager.py::test_env_override 
+-------------------------------- live log call --------------------------------
+INFO     configuration.config_manager:config_manager.py:66 ConfigurationManager baþlatýlýyor (config_dir=C:\Users\hhoda\AppData\Local\Temp\pytest-of-hhoda\pytest-34\test_env_override0\cfg)
+WARNING  configuration.config_manager:config_manager.py:268 Veritabanýndan ayarlar alýnýrken hata: (sqlite3.OperationalError) no such table: ayarlar
+[SQL: SELECT ayarlar.id AS ayarlar_id, ayarlar.anahtar AS ayarlar_anahtar, ayarlar.deger AS ayarlar_deger, ayarlar.aciklama AS ayarlar_aciklama, ayarlar.created_at AS ayarlar_created_at, ayarlar.updated_at AS ayarlar_updated_at 
+FROM ayarlar]
+(Background on this error at: https://sqlalche.me/e/14/e3q8)
+INFO     configuration.config_manager:config_manager.py:68 ConfigurationManager baþarýyla baþlatýldý
+PASSED                                                                   [ 52%]
+tests/test_configuration_manager.py::test_reload_clears_overrides 
+-------------------------------- live log call --------------------------------
+INFO     configuration.config_manager:config_manager.py:66 ConfigurationManager baþlatýlýyor (config_dir=C:\Users\hhoda\AppData\Local\Temp\pytest-of-hhoda\pytest-34\test_reload_clears_overrides0\cfg)
+WARNING  configuration.config_manager:config_manager.py:268 Veritabanýndan ayarlar alýnýrken hata: (sqlite3.OperationalError) no such table: ayarlar
+[SQL: SELECT ayarlar.id AS ayarlar_id, ayarlar.anahtar AS ayarlar_anahtar, ayarlar.deger AS ayarlar_deger, ayarlar.aciklama AS ayarlar_aciklama, ayarlar.created_at AS ayarlar_created_at, ayarlar.updated_at AS ayarlar_updated_at 
+FROM ayarlar]
+(Background on this error at: https://sqlalche.me/e/14/e3q8)
+INFO     configuration.config_manager:config_manager.py:68 ConfigurationManager baþarýyla baþlatýldý
+INFO     configuration.config_manager:config_manager.py:524 Configuration yeniden yükleniyor...
+WARNING  configuration.config_manager:config_manager.py:268 Veritabanýndan ayarlar alýnýrken hata: (sqlite3.OperationalError) no such table: ayarlar
+[SQL: SELECT ayarlar.id AS ayarlar_id, ayarlar.anahtar AS ayarlar_anahtar, ayarlar.deger AS ayarlar_deger, ayarlar.aciklama AS ayarlar_aciklama, ayarlar.created_at AS ayarlar_created_at, ayarlar.updated_at AS ayarlar_updated_at 
+FROM ayarlar]
+(Background on this error at: https://sqlalche.me/e/14/e3q8)
+INFO     configuration.config_manager:config_manager.py:528 Configuration yeniden yükleme tamamlandý
+PASSED                                                                   [ 53%]
+tests/test_configuration_manager_db.py::test_loads_database_configs 
+-------------------------------- live log call --------------------------------
+INFO     configuration.config_manager:config_manager.py:66 ConfigurationManager baþlatýlýyor (config_dir=config)
+INFO     configuration.config_manager:config_manager.py:68 ConfigurationManager baþarýyla baþlatýldý
+PASSED                                                                   [ 53%]
+tests/test_daire_controller.py::test_daire_crud_and_queries 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     BlokController:logger.py:105 Successfully created record with id 1 for model Blok
+INFO     DaireController:logger.py:105 Successfully created record with id 1 for model Daire
+INFO     SakinController:logger.py:105 Successfully created record with id 1 for model Sakin
+INFO     DaireController:logger.py:105 Record with id 1 found for model Daire
+INFO     DaireController:logger.py:105 Successfully updated record with id 1 for model Daire
+PASSED                                                                   [ 54%]
+tests/test_database_config.py::test_get_db_returns_session PASSED        [ 54%]
+tests/test_database_config.py::test_create_tables_uses_engine PASSED     [ 55%]
+tests/test_database_config.py::test_init_database_calls_create_tables PASSED [ 56%]
+tests/test_end_to_end_flow.py::test_lojman_to_sakin_complete_flow 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     BlokController:logger.py:105 Successfully created record with id 1 for model Blok
+INFO     DaireController:logger.py:105 Successfully created record with id 1 for model Daire
+INFO     SakinController:logger.py:105 Successfully created record with id 1 for model Sakin
+INFO     AidatIslemController:logger.py:105 Successfully created record with id 1 for model AidatIslem
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 1, Type: Gelir, Amount: 1500.0, Account: 1)
+INFO     SakinController:logger.py:105 Successfully fetched 1 active residents
+INFO     DaireController:logger.py:105 Record with id 1 found for model Daire
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+PASSED                                                                   [ 56%]
+tests/test_end_to_end_flow.py::test_lojman_sakin_roundtrip_verification 
+-------------------------------- live log call --------------------------------
+INFO     LojmanController:logger.py:105 Successfully created record with id 1 for model Lojman
+INFO     BlokController:logger.py:105 Successfully created record with id 1 for model Blok
+INFO     DaireController:logger.py:105 Successfully created record with id 1 for model Daire
+INFO     DaireController:logger.py:105 Successfully created record with id 2 for model Daire
+INFO     SakinController:logger.py:105 Successfully created record with id 1 for model Sakin
+INFO     SakinController:logger.py:105 Successfully created record with id 2 for model Sakin
+INFO     LojmanController:logger.py:105 Record with id 1 found for model Lojman
+INFO     BlokController:logger.py:105 Record with id 1 found for model Blok
+INFO     SakinController:logger.py:105 Record with id 1 found for model Sakin
+INFO     SakinController:logger.py:105 Record with id 2 found for model Sakin
+PASSED                                                                   [ 57%]
+tests/test_finans_islem_controller.py::test_create_income_and_expense_and_transfer 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Successfully created record with id 2 for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 1, Type: Gelir, Amount: 200.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 2, Type: Gider, Amount: 100.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 3, Type: Transfer, Amount: 200.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+PASSED                                                                   [ 57%]
+tests/test_finans_islem_controller.py::test_update_with_balance_adjustment_and_delete 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 1, Type: Gelir, Amount: 300.0, Account: 1)
+INFO     FinansIslemController:logger.py:105 Finance transaction updated (ID: 1, Type: Gelir\u2192Gelir, Amount: 300.0\u2192400.0)\nINFO     FinansIslemController:logger.py:105 Successfully fetched 1 transactions for account 1
+INFO     FinansIslemController:logger.py:105 Finance transaction deleted (ID: 1, Type: Gelir, Amount: 400.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+PASSED                                                                   [ 58%]
+tests/test_finans_islem_controller.py::test_transfer_with_insufficient_balance_raises_error 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Successfully created record with id 2 for model Hesap
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+PASSED                                                                   [ 58%]
+tests/test_finans_islem_controller.py::test_transfer_atomic_rollback_on_invalid_hedef_hesap 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     FinansIslemController:logger.py:105 Successfully fetched 0 transfer transactions
+PASSED                                                                   [ 59%]
+tests/test_finans_islem_controller.py::test_create_with_invalid_kategori_raises_notfound 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+PASSED                                                                   [ 59%]
+tests/test_finans_islem_controller.py::test_delete_transfer_reverses_balances 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Successfully created record with id 2 for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 1, Type: Transfer, Amount: 150.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction deleted (ID: 1, Type: Transfer, Amount: 150.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+PASSED                                                                   [ 60%]
+tests/test_finans_islem_controller.py::test_update_transfer_to_gider_and_adjust_balances 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Successfully created record with id 2 for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 1, Type: Transfer, Amount: 50.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction updated (ID: 1, Type: Transfer\u2192Gider, Amount: 50.0\u219250.0)\nINFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+PASSED                                                                   [ 60%]
+tests/test_finans_islem_controller.py::test_update_transfer_to_gelir_and_adjust_balances 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Successfully created record with id 2 for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 1, Type: Transfer, Amount: 50.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction updated (ID: 1, Type: Transfer\u2192Gelir, Amount: 50.0\u219260.0)\nINFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+PASSED                                                                   [ 61%]
+tests/test_finans_islem_controller.py::test_update_gider_to_transfer_and_adjust_balances 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Successfully created record with id 2 for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction created (ID: 1, Type: Gider, Amount: 50.0, Account: 1)
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+INFO     FinansIslemController:logger.py:105 Finance transaction updated (ID: 1, Type: Gider\u2192Transfer, Amount: 50.0\u219250.0)\nINFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 2 found for model Hesap
+PASSED                                                                   [ 61%]
+tests/test_hesap_controller.py::test_create_update_and_set_default 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Successfully updated record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Default account found: Test Bank
+PASSED                                                                   [ 62%]
+tests/test_hesap_controller.py::test_hesap_bakiye_guncelle_income_and_expense 
+-------------------------------- live log call --------------------------------
+INFO     HesapController:logger.py:105 Successfully created record with id 1 for model Hesap
+INFO     HesapController:logger.py:105 Account 1 balance updated: 500.0 \u2192 700.0 (I\u015flem: Gelir, Tutar: 200.0)\nINFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+INFO     HesapController:logger.py:105 Account 1 balance updated: 700.0 \u2192 600.0 (I\u015flem: Gider, Tutar: 100.0)\nINFO     HesapController:logger.py:105 Record with id 1 found for model Hesap
+PASSED                                                                   [ 62%]
+tests/test_kategori_controller.py::test_create_update_delete_ana_alt_kategori PASSED [ 63%]
+tests/test_sakin_controller.py::test_create_sakin_and_get_active 
+-------------------------------- live log call --------------------------------
+INFO     SakinController:logger.py:105 Successfully created record with id 1 for model Sakin
+INFO     SakinController:logger.py:105 Successfully fetched 1 active residents
+PASSED                                                                   [ 63%]
+tests/test_sakin_controller.py::test_pasif_yap_and_delete 
+-------------------------------- live log call --------------------------------
+INFO     SakinController:logger.py:105 Successfully created record with id 1 for model Sakin
+INFO     SakinController:logger.py:105 Successfully set resident id 1 as passive
+INFO     SakinController:logger.py:105 Record with id 1 found for model Sakin
+INFO     SakinController:logger.py:105 Successfully updated record with id 1 for model Sakin
+INFO     SakinController:logger.py:105 Successfully set resident id 1 as active
+INFO     SakinController:logger.py:105 Record with id 1 found for model Sakin
+INFO     SakinController:logger.py:105 Successfully removed resident with id 1 from view (cikis_tarihi preserved: None)
+PASSED                                                                   [ 64%]
+tests/test_validators.py::test_validate_required_and_string_length PASSED [ 64%]
+tests/test_validators.py::test_validate_phone_and_email PASSED           [ 65%]
+tests/test_validators.py::test_validate_positive_integer_date_choice PASSED [ 65%]
+tests/test_validators.py::test_unique_field_and_batchvalidator PASSED    [ 66%]
+tests/ui/test_aidat_panel.py::test_get_sakin_at_date_returns_name PASSED [ 67%]
+tests/ui/test_aidat_panel_run.py::test_load_aidat_islemleri_populates_tree PASSED [ 67%]
+tests/ui/test_ayarlar_panel.py::test_ayarlar_panel_initialization PASSED [ 68%]
+tests/ui/test_ayarlar_panel.py::test_load_kategori_listesi_populates_tree PASSED [ 68%]
+tests/ui/test_ayarlar_panel.py::test_open_kategori_modal_creates_window PASSED [ 69%]
+tests/ui/test_ayarlar_panel.py::test_save_kategori_validates_input PASSED [ 69%]
+tests/ui/test_ayarlar_panel.py::test_duzenle_kategori_shows_modal PASSED [ 70%]
+tests/ui/test_ayarlar_panel.py::test_sil_kategori_requires_selection PASSED [ 70%]
+tests/ui/test_ayarlar_panel.py::test_yedek_al_opens_file_dialog FAILED   [ 71%]
+tests/ui/test_ayarlar_panel.py::test_yedekten_yukle_opens_file_dialog FAILED [ 71%]
+tests/ui/test_ayarlar_panel.py::test_sifirla_veritabani_requires_confirmation PASSED [ 72%]
+tests/ui/test_dashboard_panel_run.py::test_dashboard_panel_initialization FAILED [ 72%]
+tests/ui/test_dashboard_panel_run.py::test_get_formatted_time_returns_correct_format PASSED [ 73%]
+tests/ui/test_dashboard_panel_run.py::test_refresh_dashboard_clears_and_recreates_components PASSED [ 73%]
+tests/ui/test_dashboard_panel_run.py::test_get_toplam_bakiye_returns_correct_sum PASSED [ 74%]
+tests/ui/test_dashboard_panel_run.py::test_get_toplam_bakiye_returns_zero_when_no_accounts PASSED [ 74%]
+tests/ui/test_dashboard_panel_run.py::test_get_bu_ay_geliri_returns_correct_sum PASSED [ 75%]
+tests/ui/test_dashboard_panel_run.py::test_get_dolu_lojman_sayisi_returns_correct_count PASSED [ 75%]
+tests/ui/test_dashboard_panel_run.py::test_create_kpi_card_creates_ui_elements PASSED [ 76%]
+tests/ui/test_dashboard_panel_run.py::test_get_6ay_trend_data_returns_correct_structure PASSED [ 76%]
+tests/ui/test_dashboard_panel_run.py::test_get_hesap_dagitimi_data_returns_correct_structure PASSED [ 77%]
+tests/ui/test_finans_panel_run.py::test_finans_panel_initialization PASSED [ 78%]
+tests/ui/test_finans_panel_run.py::test_load_hesaplar_populates_tree PASSED [ 78%]
+tests/ui/test_finans_panel_run.py::test_load_islemler_populates_tree PASSED [ 79%]
+tests/ui/test_finans_panel_run.py::test_open_yeni_hesap_modal_creates_window 

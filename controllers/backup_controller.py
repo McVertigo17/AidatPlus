@@ -11,7 +11,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from database.config import get_db, engine, Base
+from database.config import get_db, engine, Base, get_db_session
 from models.base import (
     Lojman, Blok, Daire, Sakin, Aidat, AidatIslem, AidatOdeme,
     Hesap, Kategori, FinansIslem, Ayar, AnaKategori, AltKategori, Finans
@@ -42,15 +42,13 @@ class BackupController:
     def get_database_info(self) -> Dict[str, int]:
         """Veritabanı bilgilerini al (tablo başına satır sayısı)"""
         try:
-            db = self._get_db()
             info = {}
-            
-            for model in self.MODELS_ORDER:
-                count = db.query(model).count()
-                if count > 0:
-                    table_name = model.__tablename__
-                    info[table_name] = count
-            
+            with get_db_session() as db:
+                for model in self.MODELS_ORDER:
+                    count = db.query(model).count()
+                    if count > 0:
+                        table_name = model.__tablename__
+                        info[table_name] = count
             return info
         except Exception as e:
             print(f"Veritabanı bilgisi alınamadı: {str(e)}")
@@ -66,13 +64,11 @@ class BackupController:
             bool: Başarılı olup olmadığı
         """
         try:
-            db = self._get_db()
-            
             # Tüm verileri ters sırada sil (foreign key constraints)
-            for model in reversed(self.MODELS_ORDER):
-                db.query(model).delete()
-            
-            db.commit()
+            with get_db_session() as db:
+                for model in reversed(self.MODELS_ORDER):
+                    db.query(model).delete()
+                db.commit()
             return True
             
         except Exception as e:
@@ -114,26 +110,19 @@ class BackupController:
             bool: Başarılı olup olmadığı
         """
         try:
-            db = self._get_db()
-            
-            # Excel yazıcısını oluştur
-            excel_file = pd.ExcelWriter(filepath, engine='openpyxl')
-            
-            # Her tablo için verileri Excel'e yaz
-            for model in self.MODELS_ORDER:
-                table_name = model.__tablename__
-                
-                # Verileri sor
-                data = db.query(model).all()
-                
-                if data:
-                    # Modeli DataFrame'e çevir
-                    df = self._model_list_to_dataframe(data)
-                    
-                    # Excel'e yaz
-                    df.to_excel(excel_file, sheet_name=table_name, index=False)
-            
-            excel_file.close()
+            with get_db_session() as db:
+                # Excel yazıcısını oluştur ve context içinde kullan
+                with pd.ExcelWriter(filepath, engine='openpyxl') as excel_file:
+                    # Her tablo için verileri Excel'e yaz
+                    for model in self.MODELS_ORDER:
+                        table_name = model.__tablename__
+                        # Verileri sor
+                        data = db.query(model).all()
+                        if data:
+                            # Modeli DataFrame'e çevir
+                            df = self._model_list_to_dataframe(data)
+                            # Excel'e yaz
+                            df.to_excel(excel_file, sheet_name=table_name, index=False)
             return True
             
         except Exception as e:
@@ -153,51 +142,50 @@ class BackupController:
             bool: Başarılı olup olmadığı
         """
         try:
-            db = self._get_db()
-            
-            # Root element oluştur
-            root = ET.Element("YedekVeri")
-            root.set("tarih", datetime.now().isoformat())
-            root.set("versiyon", "1.0")
-            
-            # Her tablo için veri ekle
-            for model in self.MODELS_ORDER:
-                table_name = model.__tablename__
-                
-                # Verileri sor
-                data = db.query(model).all()
-                
-                if data:
-                    # Tablo elementi oluştur
-                    table_element = ET.SubElement(root, "Tablo")
-                    table_element.set("ad", table_name)
-                    
-                    # Her satırı XML'e ekle
-                    for row in data:
-                        row_element = ET.SubElement(table_element, "Satir")
-                        
-                        # Kolon değerlerini ekle
-                        mapper = inspect(model)
-                        for column in mapper.columns:
-                            col_name = column.name
-                            col_value = getattr(row, col_name, None)
-                            
-                            # Değeri string'e çevir
-                            if col_value is not None:
-                                if isinstance(col_value, datetime):
-                                    col_value = col_value.isoformat()
-                                else:
-                                    col_value = str(col_value)
-                            
-                            # Element ekle
-                            col_element = ET.SubElement(row_element, col_name)
-                            col_element.text = col_value or ""
-            
+            with get_db_session() as db:
+                # Root element oluştur
+                root = ET.Element("YedekVeri")
+                root.set("tarih", datetime.now().isoformat())
+                root.set("versiyon", "1.0")
+
+                # Her tablo için veri ekle
+                for model in self.MODELS_ORDER:
+                    table_name = model.__tablename__
+
+                    # Verileri sor
+                    data = db.query(model).all()
+
+                    if data:
+                        # Tablo elementi oluştur
+                        table_element = ET.SubElement(root, "Tablo")
+                        table_element.set("ad", table_name)
+
+                        # Her satırı XML'e ekle
+                        for row in data:
+                            row_element = ET.SubElement(table_element, "Satir")
+
+                            # Kolon değerlerini ekle
+                            mapper = inspect(model)
+                            for column in mapper.columns:
+                                col_name = column.name
+                                col_value = getattr(row, col_name, None)
+
+                                # Değeri string'e çevir
+                                if col_value is not None:
+                                    if isinstance(col_value, datetime):
+                                        col_value = col_value.isoformat()
+                                    else:
+                                        col_value = str(col_value)
+
+                                # Element ekle
+                                col_element = ET.SubElement(row_element, col_name)
+                                col_element.text = col_value or ""
+
             # XML'i dosyaya yaz
             tree = ET.ElementTree(root)
             ET.indent(root, space="  ")  # Formatla
             tree.write(filepath, encoding='utf-8', xml_declaration=True)
-            
+
             return True
             
         except Exception as e:
@@ -217,56 +205,54 @@ class BackupController:
             bool: Başarılı olup olmadığı
         """
         try:
-            db = self._get_db()
-            
-            # Excel dosyasını oku
-            try:
-                xls = pd.ExcelFile(filepath)
-            except Exception as e:
-                print(f"Excel dosyası okunurken hata: {str(e)}")
-                return False
-            
-            # Önce veritabanını temizle
-            try:
-                self._clear_database(db)
-            except Exception as e:
-                print(f"Veritabanı temizleme başarısız: {str(e)}")
-                db.rollback()
-                return False
-            
-            # Sheet sırasına göre (foreign key dependencies)
-            for model in self.MODELS_ORDER:
-                table_name = model.__tablename__
-                
-                # Sheet varsa oku
-                if table_name in xls.sheet_names:
-                    try:
-                        df = pd.read_excel(filepath, sheet_name=table_name)
-                        row_count = 0
-                        
-                        # Her satırı database'e ekle
-                        for _, row in df.iterrows():
-                            # NaN değerleri None'a çevir
-                            row_dict = row.where(pd.notna(row), None).to_dict()
-                            
-                            # Model instance'ı oluştur
-                            try:
-                                instance = model(**row_dict)
-                                db.add(instance)
-                                row_count += 1
-                            except Exception as e:
-                                print(f"Satır eklerken hata ({table_name}): {str(e)}")
-                                db.rollback()
-                                return False
-                        
-                        # Commit et
-                        db.commit()
-                        print(f"{table_name}: {row_count} satır yüklendi")
-                        
-                    except Exception as e:
-                        print(f"Excel sheet okunurken hata ({table_name}): {str(e)}")
-                        db.rollback()
-                        return False
+            with get_db_session() as db:
+                # Excel dosyasını oku (context manager ile) 
+                try:
+                    with pd.ExcelFile(filepath) as xls:
+                        # Önce veritabanını temizle
+                        try:
+                            self._clear_database(db)
+                        except Exception as e:
+                            print(f"Veritabanı temizleme başarısız: {str(e)}")
+                            db.rollback()
+                            return False
+
+                        # Sheet sırasına göre (foreign key dependencies)
+                        for model in self.MODELS_ORDER:
+                            table_name = model.__tablename__
+
+                            # Sheet varsa oku
+                            if table_name in xls.sheet_names:
+                                try:
+                                    df = pd.read_excel(filepath, sheet_name=table_name)
+                                    row_count = 0
+
+                                    # Her satırı database'e ekle
+                                    for _, row in df.iterrows():
+                                        # NaN değerleri None'a çevir
+                                        row_dict = row.where(pd.notna(row), None).to_dict()
+
+                                        # Model instance'ı oluştur
+                                        try:
+                                            instance = model(**row_dict)
+                                            db.add(instance)
+                                            row_count += 1
+                                        except Exception as e:
+                                            print(f"Satır eklerken hata ({table_name}): {str(e)}")
+                                            db.rollback()
+                                            return False
+
+                                    # Commit et
+                                    db.commit()
+                                    print(f"{table_name}: {row_count} satır yüklendi")
+
+                                except Exception as e:
+                                    print(f"Excel sheet okunurken hata ({table_name}): {str(e)}")
+                                    db.rollback()
+                                    return False
+                except Exception as e:
+                    print(f"Excel dosyası okunurken hata: {str(e)}")
+                    return False
             
             print("Excel geri yükleme başarılı")
             return True
@@ -292,78 +278,75 @@ class BackupController:
             bool: Başarılı olup olmadığı
         """
         try:
-            db = self._get_db()
-            
-            # XML'i oku
-            try:
-                tree = ET.parse(filepath)
-                root = tree.getroot()
-            except ET.ParseError as pe:
-                print(f"XML dosyası okunurken hata: {str(pe)}")
-                db.rollback()
-                return False
-            
-            # Önce veritabanını temizle
-            try:
-                self._clear_database(db)
-            except Exception as e:
-                print(f"Veritabanı temizleme başarısız: {str(e)}")
-                db.rollback()
-                return False
-            
-            # Her tablo için veri ekle
-            for table_elem in root.findall("Tablo"):
-                table_name = table_elem.get("ad")
-                
-                # Modeli bul
-                if table_name is not None:
-                    model = self._get_model_by_table_name(table_name)
-                    if not model:
-                        print(f"Model bulunamadı: {table_name}")
-                        continue
-                else:
-                    print("Geçersiz tablo adı")
-                    continue
-                
-                # Her satırı işle
-                row_count = 0
-                for row_elem in table_elem.findall("Satir"):
-                    row_dict = {}
-                    
-                    # Kolon değerlerini oku
-                    for col_elem in row_elem:
-                        col_name = col_elem.tag
-                        col_value = col_elem.text or None
-                        
-                        # Tip dönüştürmesi yap
-                        col_value = self._convert_value(model, col_name, col_value)
-                        
-                        row_dict[col_name] = col_value
-                    
-                    # Model instance'ı oluştur ve ekle
-                    if row_dict:
-                        try:
-                            instance = model(**row_dict)
-                            db.add(instance)
-                            row_count += 1
-                        except TypeError as te:
-                            # Bilinmeyen kolon varsa atla
-                            print(f"Satır eklerken TypeError ({table_name}): {str(te)}")
-                            continue
-                        except Exception as e:
-                            print(f"Satır eklerken hata ({table_name}): {str(e)}")
-                            db.rollback()
-                            return False
-                
-                # Commit et
+            with get_db_session() as db:
+                # XML'i oku
                 try:
-                    db.commit()
-                    print(f"{table_name}: {row_count} satır yüklendi")
+                    tree = ET.parse(filepath)
+                    root = tree.getroot()
+                except ET.ParseError as pe:
+                    print(f"XML dosyası okunurken hata: {str(pe)}")
+                    return False
+
+                # Önce veritabanını temizle
+                try:
+                    self._clear_database(db)
                 except Exception as e:
-                    print(f"Commit hatası ({table_name}): {str(e)}")
+                    print(f"Veritabanı temizleme başarısız: {str(e)}")
                     db.rollback()
                     return False
-            
+
+                # Her tablo için veri ekle
+                for table_elem in root.findall("Tablo"):
+                    table_name = table_elem.get("ad")
+
+                    # Modeli bul
+                    if table_name is not None:
+                        model = self._get_model_by_table_name(table_name)
+                        if not model:
+                            print(f"Model bulunamadı: {table_name}")
+                            continue
+                    else:
+                        print("Geçersiz tablo adı")
+                        continue
+
+                    # Her satırı işle
+                    row_count = 0
+                    for row_elem in table_elem.findall("Satir"):
+                        row_dict = {}
+
+                        # Kolon değerlerini oku
+                        for col_elem in row_elem:
+                            col_name = col_elem.tag
+                            col_value = col_elem.text or None
+
+                            # Tip dönüştürmesi yap
+                            col_value = self._convert_value(model, col_name, col_value)
+                            row_dict[col_name] = col_value
+
+                        # Model instance'ı oluştur ve ekle
+                        if row_dict:
+                            try:
+                                instance = model(**row_dict)
+                                db.add(instance)
+                                row_count += 1
+                            except TypeError as te:
+                                # Bilinmeyen kolon varsa atla
+                                print(f"Satır eklerken TypeError ({table_name}): {str(te)}")
+                                continue
+                            except Exception as e:
+                                print(f"Satır eklerken hata ({table_name}): {str(e)}")
+                                db.rollback()
+                                return False
+
+                    # Commit et
+                    try:
+                        db.commit()
+                        print(f"{table_name}: {row_count} satır yüklendi")
+                    except Exception as e:
+                        print(f"Commit hatası ({table_name}): {str(e)}")
+                        db.rollback()
+                        return False
+
             print("XML geri yükleme başarılı")
             return True
             
@@ -375,7 +358,8 @@ class BackupController:
                 db.rollback()
             return False
         finally:
-            self._close_db()
+            # No explicit local db close required; get_db_session handles session cleanup if needed.
+            pass
 
     def _clear_database(self, db: Session) -> None:
         """

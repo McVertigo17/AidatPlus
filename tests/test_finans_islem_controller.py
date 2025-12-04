@@ -1,7 +1,7 @@
 from controllers.finans_islem_controller import FinansIslemController
 from controllers.hesap_controller import HesapController
 from datetime import datetime
-from models.exceptions import NotFoundError
+from models.exceptions import NotFoundError, ValidationError
 
 
 def test_create_income_and_expense_and_transfer(db_session):
@@ -72,7 +72,8 @@ def test_update_with_balance_adjustment_and_delete(db_session):
     assert abs(hesap_after.bakiye - 1000.0) < 0.001
 
 
-def test_transfer_with_insufficient_balance_allows_negative(db_session):
+def test_transfer_with_insufficient_balance_raises_error(db_session):
+    """Test that transfer with insufficient balance raises ValidationError"""
     session = db_session
     hesap_ctrl = HesapController()
     finans_ctrl = FinansIslemController()
@@ -81,64 +82,56 @@ def test_transfer_with_insufficient_balance_allows_negative(db_session):
     h_src = hesap_ctrl.create({"ad": "H_SRC", "tur": "Banka", "bakiye": 50.0}, db=session)
     h_dst = hesap_ctrl.create({"ad": "H_DST", "tur": "Banka", "bakiye": 0.0}, db=session)
 
-    # Transfer more than available
-    transfer = finans_ctrl.create({
-        "tur": "Transfer",
-        "tutar": 100.0,
-        "hesap_id": h_src.id,
-        "hedef_hesap_id": h_dst.id,
-        "tarih": datetime(2025, 3, 1)
-    }, db=session)
-
-    assert transfer.id is not None
+    # Transfer more than available - should raise ValidationError
+    try:
+        transfer = finans_ctrl.create({
+            "tur": "Transfer",
+            "tutar": 100.0,
+            "hesap_id": h_src.id,
+            "hedef_hesap_id": h_dst.id,
+            "tarih": datetime(2025, 3, 1)
+        }, db=session)
+        assert False, "Expected ValidationError for insufficient balance"
+    except ValidationError as e:
+        assert e.code == "VAL_TRN_002"
+    
+    # Verify balances unchanged after failed transfer
     updated_src = hesap_ctrl.get_by_id(h_src.id, db=session)
     updated_dst = hesap_ctrl.get_by_id(h_dst.id, db=session)
-    # Source should be negative (50 - 100)
-    assert abs(updated_src.bakiye - (-50.0)) < 0.001
-    # Destination increased
-    assert abs(updated_dst.bakiye - 100.0) < 0.001
+    assert abs(updated_src.bakiye - 50.0) < 0.001
+    assert abs(updated_dst.bakiye - 0.0) < 0.001
 
 
-def test_transfer_balance_update_failure_propagates_and_islem_persists(db_session, monkeypatch):
+def test_transfer_atomic_rollback_on_invalid_hedef_hesap(db_session):
+    """Test that transfer atomically rolls back if target account doesn't exist"""
     session = db_session
     hesap_ctrl = HesapController()
     finans_ctrl = FinansIslemController()
 
     h_src = hesap_ctrl.create({"ad": "H4", "tur": "Banka", "bakiye": 500.0}, db=session)
-    h_dst = hesap_ctrl.create({"ad": "H5", "tur": "Banka", "bakiye": 200.0}, db=session)
-
-    # Monkeypatch hesap_bakiye_guncelle to raise exception on update
-    def raise_error(self, hesap_id, tutar, islem_turu, db=None):
-        raise RuntimeError("Simulated balance update failure")
-
-    monkeypatch.setattr(HesapController, 'hesap_bakiye_guncelle', raise_error)
-
+    # Invalid hedef_hesap_id (doesn't exist)
+    
+    initial_src_balance = h_src.bakiye
+    
     try:
-        try:
-            finans_ctrl.create({
-                "tur": "Transfer",
-                "tutar": 100.0,
-                "hesap_id": h_src.id,
-                "hedef_hesap_id": h_dst.id,
-                "tarih": datetime(2025, 4, 1)
-            }, db=session)
-            assert False, "Expected RuntimeError due to monkeypatched hesap_bakiye_guncelle"
-        except RuntimeError:
-            # Exception propagated as expected
-            pass
+        finans_ctrl.create({
+            "tur": "Transfer",
+            "tutar": 100.0,
+            "hesap_id": h_src.id,
+            "hedef_hesap_id": 9999,  # Non-existent account
+            "tarih": datetime(2025, 4, 1)
+        }, db=session)
+        assert False, "Expected NotFoundError for non-existent target account"
+    except NotFoundError as e:
+        assert e.code == "NOT_FOUND_ACC_002"
 
-        # Transaction record was committed first; ensure the FinansIslem exists
-        txs = finans_ctrl.get_transferler(db=session)
-        assert any(tx.hedef_hesap_id == h_dst.id and tx.hesap_id == h_src.id for tx in txs)
-
-        # Balances should remain unchanged because balance update failed
-        s_after = hesap_ctrl.get_by_id(h_src.id, db=session)
-        d_after = hesap_ctrl.get_by_id(h_dst.id, db=session)
-        assert abs(s_after.bakiye - 500.0) < 0.001
-        assert abs(d_after.bakiye - 200.0) < 0.001
-    finally:
-        # restore method (monkeypatch will be undone automatically by fixture cleanup)
-        pass
+    # Verify source balance unchanged (atomic rollback)
+    s_after = hesap_ctrl.get_by_id(h_src.id, db=session)
+    assert abs(s_after.bakiye - initial_src_balance) < 0.001
+    
+    # Verify no transactions created
+    txs = finans_ctrl.get_transferler(db=session)
+    assert len(txs) == 0
 
 
 def test_create_with_invalid_kategori_raises_notfound(db_session):

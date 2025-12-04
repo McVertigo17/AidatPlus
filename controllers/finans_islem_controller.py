@@ -12,7 +12,7 @@ from controllers.base_controller import BaseController
 from models.base import FinansIslem, AltKategori, Hesap
 from models.validation import Validator
 from models.exceptions import ValidationError, NotFoundError, DatabaseError
-from database.config import get_db
+from database.config import get_db_session, get_db
 from datetime import datetime
 from controllers.hesap_controller import HesapController
 
@@ -35,7 +35,7 @@ class FinansIslemController(BaseController[FinansIslem]):
         super().__init__(FinansIslem)
         self.logger = get_logger(f"{self.__class__.__name__}")
 
-    def create(self, data: dict, db: Optional[Session] = None) -> FinansIslem:
+    def create(self, data: dict, db: Session = None) -> FinansIslem:
         """
         Yeni finans işlemi oluştur ve hesap bakiyesini güncelle (ATOMIC).
         
@@ -51,6 +51,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                 - tarih (datetime): İşlem tarihi (zorunlu)
                 - aciklama (str): Açıklama
                 - kategori_id (int, optional): Kategori ID'si (opsiyonel)
+            db (Session, optional): Veritabanı session
         
         Returns:
             FinansIslem: Oluşturulan işlem nesnesi
@@ -70,11 +71,9 @@ class FinansIslemController(BaseController[FinansIslem]):
             ... }
             >>> islem = controller.create(data)
         """
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
             # 1. VALIDASYON AŞAMASI (DB işlemi olmadan yapılır)
             # İşlem türü validasyonu
@@ -120,7 +119,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                 Validator.validate_positive_number(data.get("kategori_id"), "Kategori ID'si")
                 
                 # Kategori var mı kontrol et (kategori_id ön kontrol)
-                kategori = db.query(AltKategori).filter(
+                kategori = session.query(AltKategori).filter(
                     AltKategori.id == data.get("kategori_id"),
                     AltKategori.aktif == True
                 ).first()
@@ -133,7 +132,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                     )
             
             # 2. HESAP KONTROLÜ (Row lock ile atomic işlem için)
-            hesap = db.query(Hesap).filter(Hesap.id == hesap_id).with_for_update().first()
+            hesap = session.query(Hesap).filter(Hesap.id == hesap_id).with_for_update().first()
             if not hesap:
                 raise NotFoundError(
                     f"Hesap ID {hesap_id} bulunamadı",
@@ -143,7 +142,7 @@ class FinansIslemController(BaseController[FinansIslem]):
             
             hedef_hesap = None
             if hedef_hesap_id:
-                hedef_hesap = db.query(Hesap).filter(Hesap.id == hedef_hesap_id).with_for_update().first()
+                hedef_hesap = session.query(Hesap).filter(Hesap.id == hedef_hesap_id).with_for_update().first()
                 if not hedef_hesap:
                     raise NotFoundError(
                         f"Hedef hesap ID {hedef_hesap_id} bulunamadı",
@@ -178,16 +177,13 @@ class FinansIslemController(BaseController[FinansIslem]):
             # 4. ATOMIC TRANSACTION (İşlem + Bakiye güncelleme)
             # İşlemi oluştur
             islem = FinansIslem(**data)
-            db.add(islem)
-            db.flush()  # DB'ye yazıyoruz ama commit etmiyoruz
+            session.add(islem)
+            session.flush()  # DB'ye yazıyoruz ama commit etmiyoruz
             
             # Bakiyeleri güncelle (aynı transaction'ın içinde)
-            hesap_controller = HesapController()
-            
             try:
                 if islem_tur == "Transfer":
                     # Transfer: Kaynak hesaptan çıkar, hedef hesaba ekle
-                    # Directy bakiye güncelle (hesap_bakiye_guncelle ile iki kez commit oluşturur)
                     hesap.bakiye -= tutar
                     if hedef_hesap:
                         hedef_hesap.bakiye += tutar
@@ -205,8 +201,8 @@ class FinansIslemController(BaseController[FinansIslem]):
                     self.logger.debug(f"{islem_tur} atomic update: {hesap_id} ({'+' if islem_tur == 'Gelir' else '-'}{tutar})")
                 
                 # Tüm değişiklikleri commit et (ATOMIC)
-                db.commit()
-                db.refresh(islem)
+                session.commit()
+                session.refresh(islem)
                 
                 self.logger.info(
                     f"Finance transaction created (ID: {islem.id}, Type: {islem_tur}, "
@@ -215,7 +211,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                 return islem
             
             except (IntegrityError, SQLAlchemyError) as e:
-                db.rollback()
+                session.rollback()
                 self.logger.error(f"Atomic transaction failed during balance update: {str(e)}")
                 raise DatabaseError(
                     f"İşlem ve bakiye güncellemesi başarısız (atomic transaction): {str(e)}",
@@ -237,19 +233,25 @@ class FinansIslemController(BaseController[FinansIslem]):
                 details={"error_type": type(e).__name__}
             )
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def get_gelirler(self, db: Optional[Session] = None) -> List[FinansIslem]:
-        """Gelir işlemlerini getir"""
+    def get_gelirler(self, db: Session = None) -> List[FinansIslem]:
+        """
+        Gelir işlemlerini getir.
+        
+        Args:
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            List[FinansIslem]: Gelir işlemleri listesi
+        """
         self.logger.debug("Fetching income transactions")
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
-            result = db.query(FinansIslem).options(
+            result = session.query(FinansIslem).options(
                 joinedload(FinansIslem.hesap),
                 joinedload(FinansIslem.hedef_hesap),
                 joinedload(FinansIslem.kategori).joinedload(AltKategori.ana_kategori)
@@ -263,19 +265,25 @@ class FinansIslemController(BaseController[FinansIslem]):
             self.logger.error(f"Failed to fetch income transactions: {str(e)}")
             raise
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def get_giderler(self, db: Optional[Session] = None) -> List[FinansIslem]:
-        """Gider işlemlerini getir"""
+    def get_giderler(self, db: Session = None) -> List[FinansIslem]:
+        """
+        Gider işlemlerini getir.
+        
+        Args:
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            List[FinansIslem]: Gider işlemleri listesi
+        """
         self.logger.debug("Fetching expense transactions")
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
-            result = db.query(FinansIslem).options(
+            result = session.query(FinansIslem).options(
                 joinedload(FinansIslem.hesap),
                 joinedload(FinansIslem.hedef_hesap),
                 joinedload(FinansIslem.kategori).joinedload(AltKategori.ana_kategori)
@@ -289,19 +297,25 @@ class FinansIslemController(BaseController[FinansIslem]):
             self.logger.error(f"Failed to fetch expense transactions: {str(e)}")
             raise
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def get_transferler(self, db: Optional[Session] = None) -> List[FinansIslem]:
-        """Transfer işlemlerini getir"""
+    def get_transferler(self, db: Session = None) -> List[FinansIslem]:
+        """
+        Transfer işlemlerini getir.
+        
+        Args:
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            List[FinansIslem]: Transfer işlemleri listesi
+        """
         self.logger.debug("Fetching transfer transactions")
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
-            result = db.query(FinansIslem).options(
+            result = session.query(FinansIslem).options(
                 joinedload(FinansIslem.hesap),
                 joinedload(FinansIslem.hedef_hesap)
             ).filter(
@@ -314,19 +328,26 @@ class FinansIslemController(BaseController[FinansIslem]):
             self.logger.error(f"Failed to fetch transfer transactions: {str(e)}")
             raise
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def get_by_hesap(self, hesap_id: int, db: Optional[Session] = None) -> List[FinansIslem]:
-        """Hesaba göre işlemleri getir"""
+    def get_by_hesap(self, hesap_id: int, db: Session = None) -> List[FinansIslem]:
+        """
+        Hesaba göre işlemleri getir.
+        
+        Args:
+            hesap_id (int): Hesap ID'si
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            List[FinansIslem]: Hesaba ait işlemler
+        """
         self.logger.debug(f"Fetching transactions for account {hesap_id}")
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
-            result = db.query(FinansIslem).options(
+            result = session.query(FinansIslem).options(
                 joinedload(FinansIslem.kategori)
             ).filter(
                 FinansIslem.hesap_id == hesap_id,
@@ -338,19 +359,26 @@ class FinansIslemController(BaseController[FinansIslem]):
             self.logger.error(f"Failed to fetch transactions for account {hesap_id}: {str(e)}")
             raise
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def get_by_kategori(self, kategori_id: int, db: Optional[Session] = None) -> List[FinansIslem]:
-        """Kategoriye göre işlemleri getir"""
+    def get_by_kategori(self, kategori_id: int, db: Session = None) -> List[FinansIslem]:
+        """
+        Kategoriye göre işlemleri getir.
+        
+        Args:
+            kategori_id (int): Kategori ID'si
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            List[FinansIslem]: Kategori işlemleri
+        """
         self.logger.debug(f"Fetching transactions for category {kategori_id}")
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
-            result = db.query(FinansIslem).options(
+            result = session.query(FinansIslem).options(
                 joinedload(FinansIslem.hesap)
             ).filter(
                 FinansIslem.kategori_id == kategori_id,
@@ -362,19 +390,27 @@ class FinansIslemController(BaseController[FinansIslem]):
             self.logger.error(f"Failed to fetch transactions for category {kategori_id}: {str(e)}")
             raise
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def get_by_tarih_araligi(self, baslangic_tarihi: datetime, bitis_tarihi: datetime, db: Optional[Session] = None) -> List[FinansIslem]:
-        """Tarih aralığına göre işlemleri getir"""
+    def get_by_tarih_araligi(self, baslangic_tarihi: datetime, bitis_tarihi: datetime, db: Session = None) -> List[FinansIslem]:
+        """
+        Tarih aralığına göre işlemleri getir.
+        
+        Args:
+            baslangic_tarihi (datetime): Başlangıç tarihi
+            bitis_tarihi (datetime): Bitiş tarihi
+            db (Session, optional): Veritabanı session
+        
+        Returns:
+            List[FinansIslem]: Tarih aralığındaki işlemler
+        """
         self.logger.debug(f"Fetching transactions between {baslangic_tarihi} and {bitis_tarihi}")
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
-            result = db.query(FinansIslem).options(
+            result = session.query(FinansIslem).options(
                 joinedload(FinansIslem.hesap),
                 joinedload(FinansIslem.kategori)
             ).filter(
@@ -387,10 +423,10 @@ class FinansIslemController(BaseController[FinansIslem]):
             self.logger.error(f"Failed to fetch transactions in date range: {str(e)}")
             raise
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def update_with_balance_adjustment(self, id: int, data: dict, db: Optional[Session] = None) -> Optional[FinansIslem]:
+    def update_with_balance_adjustment(self, id: int, data: dict, db: Session = None) -> Optional[FinansIslem]:
         """
         Kayıt güncelle ve hesap bakiyelerini uygun şekilde ayarla (ATOMIC).
         
@@ -414,11 +450,9 @@ class FinansIslemController(BaseController[FinansIslem]):
             >>> data = {"tur": "Gider", "tutar": 3000}
             >>> islem = controller.update_with_balance_adjustment(42, data)
         """
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
             # 1. VALIDASYON: Yeni verileri kontrol et
             if 'tur' in data:
@@ -434,7 +468,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                 Validator.validate_integer(data['hedef_hesap_id'], "Hedef Hesap ID")
             
             # 2. İşlemi veritabanından al (row lock ile)
-            existing_islem: Optional[FinansIslem] = db.query(FinansIslem).filter(
+            existing_islem: Optional[FinansIslem] = session.query(FinansIslem).filter(
                 FinansIslem.id == id
             ).with_for_update().first()
             
@@ -468,7 +502,7 @@ class FinansIslemController(BaseController[FinansIslem]):
             
             # Eski hesapları lock al
             if old_hesap_id:
-                hesaplar['old_hesap'] = db.query(Hesap).filter(
+                hesaplar['old_hesap'] = session.query(Hesap).filter(
                     Hesap.id == old_hesap_id
                 ).with_for_update().first()
                 if not hesaplar['old_hesap']:
@@ -479,7 +513,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                     )
             
             if old_hedef_hesap_id:
-                hesaplar['old_hedef_hesap'] = db.query(Hesap).filter(
+                hesaplar['old_hedef_hesap'] = session.query(Hesap).filter(
                     Hesap.id == old_hedef_hesap_id
                 ).with_for_update().first()
                 if not hesaplar['old_hedef_hesap']:
@@ -491,7 +525,7 @@ class FinansIslemController(BaseController[FinansIslem]):
             
             # Yeni hesapları lock al
             if new_hesap_id:
-                hesaplar['new_hesap'] = db.query(Hesap).filter(
+                hesaplar['new_hesap'] = session.query(Hesap).filter(
                     Hesap.id == new_hesap_id
                 ).with_for_update().first()
                 if not hesaplar['new_hesap']:
@@ -502,7 +536,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                     )
             
             if new_hedef_hesap_id:
-                hesaplar['new_hedef_hesap'] = db.query(Hesap).filter(
+                hesaplar['new_hedef_hesap'] = session.query(Hesap).filter(
                     Hesap.id == new_hedef_hesap_id
                 ).with_for_update().first()
                 if not hesaplar['new_hedef_hesap']:
@@ -589,8 +623,8 @@ class FinansIslemController(BaseController[FinansIslem]):
                         setattr(existing_islem, key, value)
                 
                 # Tüm değişiklikleri commit et (ATOMIC)
-                db.commit()
-                db.refresh(existing_islem)
+                session.commit()
+                session.refresh(existing_islem)
                 
                 self.logger.info(
                     f"Finance transaction updated (ID: {id}, "
@@ -599,7 +633,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                 return existing_islem
             
             except (IntegrityError, SQLAlchemyError) as e:
-                db.rollback()
+                session.rollback()
                 self.logger.error(f"Atomic transaction failed during update: {str(e)}")
                 raise DatabaseError(
                     f"İşlem güncelleme ve bakiye düzeltmesi başarısız (atomic transaction): {str(e)}",
@@ -614,7 +648,6 @@ class FinansIslemController(BaseController[FinansIslem]):
         except (ValidationError, NotFoundError, DatabaseError):
             raise
         except Exception as e:
-            db.rollback() if not close_db else None
             self.logger.error(f"Unexpected error during update: {str(e)}")
             raise DatabaseError(
                 f"Beklenmeyen hata: {str(e)}",
@@ -622,10 +655,10 @@ class FinansIslemController(BaseController[FinansIslem]):
                 details={"error_type": type(e).__name__}
             )
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
 
-    def delete(self, id: int, db: Optional[Session] = None) -> bool:
+    def delete(self, id: int, db: Session = None) -> bool:
         """
         İşlemi sil ve hesap bakiyelerini geri al (ATOMIC).
         
@@ -645,14 +678,12 @@ class FinansIslemController(BaseController[FinansIslem]):
         Example:
             >>> success = controller.delete(42)
         """
-        close_db = False
-        if db is None:
-            db = get_db()
-            close_db = True
-
+        session = db or get_db()
+        close_db = db is None
+        
         try:
             # 1. İşlemi veritabanından al (row lock ile atomic işlem için)
-            islem: Optional[FinansIslem] = db.query(FinansIslem).filter(
+            islem: Optional[FinansIslem] = session.query(FinansIslem).filter(
                 FinansIslem.id == id
             ).with_for_update().first()
             
@@ -669,8 +700,9 @@ class FinansIslemController(BaseController[FinansIslem]):
             # 2. ATOMIC TRANSACTION (Bakiye düzeltmeleri)
             try:
                 # Hesapları lock al
+                hesap = None
                 if hesap_id:
-                    hesap = db.query(Hesap).filter(Hesap.id == hesap_id).with_for_update().first()
+                    hesap = session.query(Hesap).filter(Hesap.id == hesap_id).with_for_update().first()
                     if not hesap:
                         raise NotFoundError(
                             f"Hesap ID {hesap_id} bulunamadı",
@@ -680,7 +712,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                 
                 hedef_hesap = None
                 if hedef_hesap_id:
-                    hedef_hesap = db.query(Hesap).filter(Hesap.id == hedef_hesap_id).with_for_update().first()
+                    hedef_hesap = session.query(Hesap).filter(Hesap.id == hedef_hesap_id).with_for_update().first()
                     if not hedef_hesap:
                         raise NotFoundError(
                             f"Hedef hesap ID {hedef_hesap_id} bulunamadı",
@@ -715,10 +747,10 @@ class FinansIslemController(BaseController[FinansIslem]):
                     self.logger.debug(f"Expense reversal: {hesap_id} (+{tutar})")
                 
                 # İşlemi sil
-                db.delete(islem)
+                session.delete(islem)
                 
                 # Tüm değişiklikleri commit et (ATOMIC)
-                db.commit()
+                session.commit()
                 
                 self.logger.info(
                     f"Finance transaction deleted (ID: {id}, Type: {islem_tur}, "
@@ -727,7 +759,7 @@ class FinansIslemController(BaseController[FinansIslem]):
                 return True
             
             except (IntegrityError, SQLAlchemyError) as e:
-                db.rollback()
+                session.rollback()
                 self.logger.error(f"Atomic transaction failed during delete: {str(e)}")
                 raise DatabaseError(
                     f"İşlem silme ve bakiye düzeltmesi başarısız (atomic transaction): {str(e)}",
@@ -742,7 +774,6 @@ class FinansIslemController(BaseController[FinansIslem]):
         except (NotFoundError, DatabaseError):
             raise
         except Exception as e:
-            db.rollback() if not close_db else None
             self.logger.error(f"Unexpected error during delete: {str(e)}")
             raise DatabaseError(
                 f"Beklenmeyen hata: {str(e)}",
@@ -750,5 +781,5 @@ class FinansIslemController(BaseController[FinansIslem]):
                 details={"error_type": type(e).__name__}
             )
         finally:
-            if close_db and db is not None:
-                db.close()
+            if close_db:
+                session.close()
