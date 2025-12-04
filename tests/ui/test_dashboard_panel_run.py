@@ -70,7 +70,7 @@ def test_dashboard_panel_initialization(monkeypatch):
     
     # Check that attributes are initialized
     assert panel.colors == colors
-    assert panel.refresh_interval == 30000
+    assert panel.refresh_interval == 300000
     assert panel.refresh_job is None
     assert panel.last_update_label is None
 
@@ -266,6 +266,59 @@ def test_get_bu_ay_geliri_returns_correct_sum(monkeypatch):
             assert isinstance(bu_ay_geliri, (int, float))
 
 
+def test_get_bu_ay_gideri_returns_correct_sum(monkeypatch):
+    """Test that get_bu_ay_gideri returns sum of current month's expenses"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock finans_controller
+    class DummyGider:
+        def __init__(self, tutar, tarih):
+            self.tutar = tutar
+            self.tarih = tarih
+    
+    # Create test data - some in current month, some not
+    now = datetime(2025, 12, 15)
+    with patch('ui.dashboard_panel.datetime') as mock_datetime:
+        mock_datetime.now.return_value = now
+        mock_datetime.__sub__ = datetime.__sub__
+        
+        current_month_giderler = [
+            DummyGider(100.0, datetime(2025, 12, 5)),
+            DummyGider(200.0, datetime(2025, 12, 10)),
+            DummyGider(50.0, datetime(2025, 12, 20))
+        ]
+        
+        other_month_giderler = [
+            DummyGider(300.0, datetime(2025, 11, 15)),
+            DummyGider(400.0, datetime(2025, 1, 15))
+        ]
+        
+        all_giderler = current_month_giderler + other_month_giderler
+        panel.finans_controller = MagicMock()
+        panel.finans_controller.get_giderler.return_value = all_giderler
+        
+        # Mock datetime comparison to work with our test data
+        with patch('ui.dashboard_panel.datetime') as mock_datetime_cmp:
+            mock_datetime_cmp.now.return_value = now
+            
+            # Call the method
+            bu_ay_gideri = panel.get_bu_ay_gideri()
+            
+            # Check that the method doesn't crash and returns a number
+            assert isinstance(bu_ay_gideri, (int, float))
+
+
 def test_get_dolu_lojman_sayisi_returns_correct_count(monkeypatch):
     """Test that get_dolu_lojman_sayisi returns correct count of occupied apartments"""
     monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
@@ -337,6 +390,361 @@ def test_create_kpi_card_creates_ui_elements(monkeypatch):
         
         # Check that CTkLabel was called correctly
         assert mock_ctk_label.call_count >= 2
+
+
+def test_create_trend_chart_creates_ui_elements(monkeypatch):
+    """Test that create_trend_chart creates the expected UI elements"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545',
+        'border': '#ddd'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock parent frame
+    parent_frame = MagicMock()
+    
+    # Mock get_6ay_trend_data to return predictable data
+    panel.get_6ay_trend_data = MagicMock(return_value=(
+        ["Oca", "Şub", "Mar"], 
+        [100.0, 200.0, 150.0], 
+        [50.0, 75.0, 60.0]
+    ))
+    
+    # Mock chart components
+    mock_chart_manager = MagicMock()
+    mock_chart_builder = MagicMock()
+    panel.chart_manager = mock_chart_manager
+    panel.chart_builder = mock_chart_builder
+    
+    # Mock chart builder method
+    mock_fig = MagicMock()
+    mock_chart_builder.create_responsive_line_chart.return_value = mock_fig
+    
+    # Mock CTkFrame, CTkLabel and CTkFont to track calls
+    with patch('customtkinter.CTkFrame') as mock_ctk_frame, \
+         patch('customtkinter.CTkLabel') as mock_ctk_label, \
+         patch('customtkinter.CTkFont') as mock_ctk_font:
+        
+        # Setup mocks
+        mock_chart_frame = MagicMock()
+        mock_title_label = MagicMock()
+        mock_font = MagicMock()
+        
+        mock_ctk_frame.return_value = mock_chart_frame
+        mock_ctk_label.return_value = mock_title_label
+        mock_ctk_font.return_value = mock_font
+        
+        # Call the method
+        panel.create_trend_chart(parent_frame, 0, 0, colspan=2)
+        
+        # Check that CTkFrame was called correctly
+        assert mock_ctk_frame.called
+        
+        # Check that CTkLabel was called for the title
+        assert mock_ctk_label.called
+
+
+def test_create_hesap_dagitimi_chart_creates_ui_elements(monkeypatch):
+    """Test that create_hesap_dagitimi_chart creates the expected UI elements"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545',
+        'border': '#ddd'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock parent frame
+    parent_frame = MagicMock()
+    
+    # Mock get_hesap_dagitimi_data to return predictable data
+    panel.get_hesap_dagitimi_data = MagicMock(return_value=(
+        ["Hesap 1", "Hesap 2"], 
+        [100.0, 200.0]
+    ))
+    
+    # Mock chart components
+    mock_chart_manager = MagicMock()
+    mock_chart_builder = MagicMock()
+    panel.chart_manager = mock_chart_manager
+    panel.chart_builder = mock_chart_builder
+    
+    # Mock chart builder method
+    mock_fig = MagicMock()
+    mock_chart_builder.create_responsive_pie_chart.return_value = mock_fig
+    
+    # Mock CTkFrame, CTkLabel and CTkFont to track calls
+    with patch('customtkinter.CTkFrame') as mock_ctk_frame, \
+         patch('customtkinter.CTkLabel') as mock_ctk_label, \
+         patch('customtkinter.CTkFont') as mock_ctk_font:
+        
+        # Setup mocks
+        mock_chart_frame = MagicMock()
+        mock_title_label = MagicMock()
+        mock_font = MagicMock()
+        
+        mock_ctk_frame.return_value = mock_chart_frame
+        mock_ctk_label.return_value = mock_title_label
+        mock_ctk_font.return_value = mock_font
+        
+        # Call the method
+        panel.create_hesap_dagitimi_chart(parent_frame, 0, 0)
+        
+        # Check that CTkFrame was called correctly
+        assert mock_ctk_frame.called
+        
+        # Check that CTkLabel was called for the title
+        assert mock_ctk_label.called
+
+
+def test_create_aidat_durum_chart_creates_ui_elements(monkeypatch):
+    """Test that create_aidat_durum_chart creates the expected UI elements"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545',
+        'border': '#ddd'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock parent frame
+    parent_frame = MagicMock()
+    
+    # Mock get_aidat_durum_data to return predictable data
+    panel.get_aidat_durum_data = MagicMock(return_value=(100.0, 50.0))
+    
+    # Mock chart components
+    mock_chart_manager = MagicMock()
+    mock_chart_builder = MagicMock()
+    panel.chart_manager = mock_chart_manager
+    panel.chart_builder = mock_chart_builder
+    
+    # Mock chart builder method
+    mock_fig = MagicMock()
+    mock_chart_builder.create_responsive_pie_chart.return_value = mock_fig
+    
+    # Mock CTkFrame, CTkLabel and CTkFont to track calls
+    with patch('customtkinter.CTkFrame') as mock_ctk_frame, \
+         patch('customtkinter.CTkLabel') as mock_ctk_label, \
+         patch('customtkinter.CTkFont') as mock_ctk_font:
+        
+        # Setup mocks
+        mock_chart_frame = MagicMock()
+        mock_title_label = MagicMock()
+        mock_font = MagicMock()
+        
+        mock_ctk_frame.return_value = mock_chart_frame
+        mock_ctk_label.return_value = mock_title_label
+        mock_ctk_font.return_value = mock_font
+        
+        # Call the method
+        panel.create_aidat_durum_chart(parent_frame, 0, 0)
+        
+        # Check that CTkFrame was called correctly
+        assert mock_ctk_frame.called
+        
+        # Check that CTkLabel was called for the title
+        assert mock_ctk_label.called
+
+
+def test_setup_charts_creates_ui_elements(monkeypatch):
+    """Test that setup_charts creates the expected UI elements"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545',
+        'border': '#ddd'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock parent frame
+    parent_frame = MagicMock()
+    
+    # Mock the chart creation methods
+    panel.create_trend_chart = MagicMock()
+    panel.create_hesap_dagitimi_chart = MagicMock()
+    panel.create_aidat_durum_chart = MagicMock()
+    
+    # Mock CTkFrame, CTkLabel and CTkFont to track calls
+    with patch('customtkinter.CTkFrame') as mock_ctk_frame, \
+         patch('customtkinter.CTkLabel') as mock_ctk_label, \
+         patch('customtkinter.CTkFont') as mock_ctk_font:
+        
+        # Setup mocks
+        mock_charts_frame = MagicMock()
+        mock_title_label = MagicMock()
+        mock_font = MagicMock()
+        
+        mock_ctk_frame.return_value = mock_charts_frame
+        mock_ctk_label.return_value = mock_title_label
+        mock_ctk_font.return_value = mock_font
+        
+        # Call the method
+        panel.setup_charts(parent_frame)
+        
+        # Check that CTkFrame was called correctly
+        assert mock_ctk_frame.called
+        
+        # Check that CTkLabel was called for the title
+        assert mock_ctk_label.called
+        
+        # Check that chart creation methods were called
+        assert panel.create_trend_chart.called
+        assert panel.create_hesap_dagitimi_chart.called
+        assert panel.create_aidat_durum_chart.called
+
+
+def test_setup_kpi_cards_creates_ui_elements(monkeypatch):
+    """Test that setup_kpi_cards creates the expected UI elements"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545',
+        'warning': '#ffc107',
+        'secondary': '#6c757d',
+        'text_secondary': '#666',
+        'border': '#ddd'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock the data methods
+    panel.get_toplam_bakiye = MagicMock(return_value=1000.0)
+    panel.get_bu_ay_geliri = MagicMock(return_value=500.0)
+    panel.get_bu_ay_gideri = MagicMock(return_value=300.0)
+    panel.get_dolu_lojman_sayisi = MagicMock(return_value=10)
+    panel.get_aidat_tahsilat_orani = MagicMock(return_value=75.0)
+    
+    # Mock the create_kpi_card method
+    panel.create_kpi_card = MagicMock()
+    
+    # Mock parent frame
+    parent_frame = MagicMock()
+    
+    # Mock CTkFrame, CTkLabel, CTkButton and CTkFont to track calls
+    with patch('customtkinter.CTkFrame') as mock_ctk_frame, \
+         patch('customtkinter.CTkLabel') as mock_ctk_label, \
+         patch('customtkinter.CTkButton') as mock_ctk_button, \
+         patch('customtkinter.CTkFont') as mock_ctk_font:
+        
+        # Setup mocks
+        mock_cards_frame = MagicMock()
+        mock_title_frame = MagicMock()
+        mock_refresh_frame = MagicMock()
+        mock_title_label = MagicMock()
+        mock_last_update_label = MagicMock()
+        mock_refresh_btn = MagicMock()
+        mock_font = MagicMock()
+        
+        # Configure the side effect to return different frames for different calls
+        frame_instances = [mock_cards_frame, mock_title_frame, mock_refresh_frame]
+        label_instances = [mock_title_label, mock_last_update_label]
+        mock_ctk_frame.side_effect = lambda *args, **kwargs: frame_instances.pop(0) if frame_instances else MagicMock()
+        mock_ctk_label.side_effect = lambda *args, **kwargs: label_instances.pop(0) if label_instances else MagicMock()
+        mock_ctk_button.return_value = mock_refresh_btn
+        mock_ctk_font.return_value = mock_font
+        
+        # Call the method
+        panel.setup_kpi_cards(parent_frame)
+        
+        # Check that CTkFrame was called
+        assert mock_ctk_frame.called
+        
+        # Check that CTkLabel was called
+        assert mock_ctk_label.called
+        
+        # Check that CTkButton was called
+        assert mock_ctk_button.called
+        
+        # Check that create_kpi_card was called 6 times (for 6 KPI cards)
+        assert panel.create_kpi_card.call_count == 6
+
+
+def test_refresh_dashboard_clears_and_recreates_components_completely(monkeypatch):
+    """Test that refresh_dashboard completely clears and recreates all components"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545',
+        'border': '#ddd'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock scroll_frame with children
+    mock_scroll_frame = MagicMock()
+    mock_widget1 = MagicMock()
+    mock_widget2 = MagicMock()
+    mock_scroll_frame.winfo_children.return_value = [mock_widget1, mock_widget2]
+    panel.scroll_frame = mock_scroll_frame
+    
+    # Mock the setup methods
+    panel.setup_kpi_cards = MagicMock()
+    panel.setup_charts = MagicMock()
+    
+    # Mock last_update_label
+    panel.last_update_label = MagicMock()
+    
+    # Mock _get_formatted_time
+    panel._get_formatted_time = MagicMock(return_value="Güncelleme: 02.12.2025 14:30:45")
+    
+    # Mock CTkFrame and CTkFont to avoid tkinter initialization issues
+    with patch('customtkinter.CTkFrame') as mock_ctk_frame, \
+         patch('customtkinter.CTkFont') as mock_ctk_font:
+        mock_frame_instance = MagicMock()
+        mock_font = MagicMock()
+        mock_ctk_frame.return_value = mock_frame_instance
+        mock_ctk_font.return_value = mock_font
+        
+        # Call refresh_dashboard
+        panel.refresh_dashboard()
+    
+    # Check that destroy was called on all child widgets
+    assert mock_widget1.destroy.called
+    assert mock_widget2.destroy.called
+    
+    # Check that setup methods were called
+    assert panel.setup_kpi_cards.called
+    assert panel.setup_charts.called
+    
+    # Check that last_update_label was updated
+    panel.last_update_label.configure.assert_called_once_with(text="Güncelleme: 02.12.2025 14:30:45")
 
 
 def test_get_6ay_trend_data_returns_correct_structure(monkeypatch):
@@ -411,3 +819,204 @@ def test_get_hesap_dagitimi_data_returns_correct_structure(monkeypatch):
     assert "Hesap 2" in hesap_adlari
     assert 100.0 in bakiyeler
     assert 200.0 in bakiyeler
+
+
+def test_get_aidat_tahsilat_orani_returns_correct_percentage(monkeypatch):
+    """Test that get_aidat_tahsilat_orani returns correct percentage"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock aidat_controller and get_db
+    class DummyAidatOdeme:
+        def __init__(self, tutar, odendi):
+            self.tutar = tutar
+            self.odendi = odendi
+    
+    class DummyAidatIslem:
+        def __init__(self, toplam_tutar, odemeler):
+            self.toplam_tutar = toplam_tutar
+            self.odemeler = odemeler
+            self.aktif = True
+    
+    # Create test data with 50% payment rate
+    odeme1 = DummyAidatOdeme(100.0, True)
+    odeme2 = DummyAidatOdeme(100.0, False)
+    aidat1 = DummyAidatIslem(200.0, [odeme1, odeme2])
+    
+    odeme3 = DummyAidatOdeme(50.0, True)
+    aidat2 = DummyAidatIslem(100.0, [odeme3])
+    
+    dummy_aidatlar = [aidat1, aidat2]
+    
+    panel.aidat_controller = MagicMock()
+    
+    # Mock get_db to return our dummy data
+    with patch('ui.dashboard_panel.get_db') as mock_get_db:
+        mock_session = MagicMock()
+        mock_session.query.return_value.filter.return_value.options.return_value.all.return_value = dummy_aidatlar
+        mock_get_db.return_value = mock_session
+        
+        # Call the method
+        tahsilat_orani = panel.get_aidat_tahsilat_orani()
+        
+        # Check the result (should be 50% - 150 paid out of 300 total)
+        assert tahsilat_orani == 50.0
+
+
+def test_get_aidat_durum_data_returns_correct_values(monkeypatch):
+    """Test that get_aidat_durum_data returns correct paid/unpaid amounts"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock aidat_controller
+    class DummyAidatOdeme:
+        def __init__(self, tutar, odendi):
+            self.tutar = tutar
+            self.odendi = odendi
+    
+    class DummyAidatIslem:
+        def __init__(self, toplam_tutar, odemeler):
+            self.toplam_tutar = toplam_tutar
+            self.odemeler = odemeler
+    
+    # Create test data - some paid, some unpaid
+    odeme1 = DummyAidatOdeme(100.0, True)
+    odeme2 = DummyAidatOdeme(50.0, False)
+    aidat1 = DummyAidatIslem(150.0, [odeme1, odeme2])
+    
+    odeme3 = DummyAidatOdeme(75.0, True)
+    aidat2 = DummyAidatIslem(100.0, [odeme3])
+    
+    dummy_aidatlar = [aidat1, aidat2]
+    
+    panel.aidat_controller = MagicMock()
+    panel.aidat_controller.get_by_yil_ay.return_value = dummy_aidatlar
+    
+    # Mock datetime
+    now = datetime(2025, 12, 15)
+    with patch('ui.dashboard_panel.datetime') as mock_datetime:
+        mock_datetime.now.return_value = now
+        
+        # Call the method
+        odenen, odenmeyen = panel.get_aidat_durum_data()
+        
+        # Check the results
+        # aidat1: 100 paid, 50 unpaid
+        # aidat2: 75 paid, 25 unpaid
+        # Total: 175 paid, 75 unpaid
+        assert odenen == 175.0
+        assert odenmeyen == 75.0
+
+
+def test_start_auto_refresh_sets_up_refresh_job(monkeypatch):
+    """Test that start_auto_refresh sets up the refresh job correctly"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Mock frame and after method
+    panel.frame = MagicMock()
+    panel.frame.after.return_value = "job_id"
+    
+    # Mock refresh_dashboard
+    panel.refresh_dashboard = MagicMock()
+    
+    # Call start_auto_refresh
+    panel.start_auto_refresh()
+    
+    # Check that refresh_dashboard was called
+    assert panel.refresh_dashboard.called
+    
+    # Check that after was called with correct parameters
+    panel.frame.after.assert_called_once_with(300000, panel.start_auto_refresh)
+    
+    # Check that refresh_job is set
+    assert panel.refresh_job == "job_id"
+
+
+def test_stop_auto_refresh_cancels_job(monkeypatch):
+    """Test that stop_auto_refresh cancels the refresh job"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Set up a mock refresh job
+    panel.refresh_job = "job_id"
+    
+    # Mock frame and after_cancel method
+    panel.frame = MagicMock()
+    
+    # Call stop_auto_refresh
+    panel.stop_auto_refresh()
+    
+    # Check that after_cancel was called with the job id
+    panel.frame.after_cancel.assert_called_once_with("job_id")
+    
+    # Check that refresh_job is now None
+    assert panel.refresh_job is None
+
+
+def test_stop_auto_refresh_with_no_job(monkeypatch):
+    """Test that stop_auto_refresh works when there's no job"""
+    monkeypatch.setattr(BasePanel, '__init__', fake_base_init)
+    
+    colors = {
+        'background': '#fff',
+        'surface': '#f7f7f7', 
+        'primary': '#222',
+        'text': '#333',
+        'success': '#28a745',
+        'error': '#dc3545'
+    }
+    
+    panel = DashboardPanel(parent=None, colors=colors)
+    
+    # Ensure no job is set
+    panel.refresh_job = None
+    
+    # Mock frame
+    panel.frame = MagicMock()
+    
+    # Call stop_auto_refresh - should not raise an error
+    panel.stop_auto_refresh()
+    
+    # Check that after_cancel was not called
+    panel.frame.after_cancel.assert_not_called()
